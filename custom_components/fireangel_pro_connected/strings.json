@@ -3,13 +3,77 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up FireAngel Pro Connected",
-        "description": "Set up the FireAngel Pro Connected integration. Device connection details will be added in a future version."
+        "title": "Connect the WiSafe2 bridge",
+        "description": "Connect the Arduino by USB and enter its serial device path.",
+        "data": {
+          "port": "Serial device path",
+          "baud_rate": "Baud rate"
+        },
+        "data_description": {
+          "port": "Use a stable /dev/serial/by-id/... path when available.",
+          "baud_rate": "The bridge firmware defaults to 115200 baud."
+        }
       }
     },
     "abort": {
-      "already_configured": "FireAngel Pro Connected is already configured."
+      "already_configured": "This serial bridge is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "menu_options": {
+          "add_device": "Add a detector by hex ID"
+        }
+      },
+      "add_device": {
+        "title": "Add a detector",
+        "description": "Enter the six-digit hex ID printed or previously configured for the detector. The optional four-digit model code will normally be learned from its next radio message.",
+        "data": {
+          "device_id": "Detector hex ID",
+          "model": "Model code (optional)",
+          "device_type": "Detector type"
+        },
+        "data_description": {
+          "device_type": "The bridge reports both smoke and heat events as FIRE, so choose the type when known."
+        }
+      }
+    },
+    "error": {
+      "invalid_device_id": "Enter exactly six hexadecimal digits.",
+      "invalid_model": "Enter exactly four hexadecimal digits.",
+      "already_configured": "This detector has already been added."
+    }
+  },
+  "selector": {
+    "device_type": {
+      "options": {
+        "auto": "Detect automatically",
+        "smoke": "Smoke alarm",
+        "heat": "Heat alarm",
+        "carbon_monoxide": "Carbon monoxide alarm"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "alarm": {"name": "Alarm"},
+      "base_problem": {"name": "Base problem"},
+      "battery_low": {"name": "Battery low"},
+      "bridge_connection": {"name": "Connection"}
+    },
+    "button": {
+      "get_pairing": {"name": "Check pairing"},
+      "silence_co": {"name": "Silence carbon monoxide alarms"},
+      "silence_fire": {"name": "Silence fire alarms"},
+      "start_pairing": {"name": "Start pairing"},
+      "test_all": {"name": "Test all alarms"},
+      "test_co": {"name": "Test carbon monoxide alarms"},
+      "test_fire": {"name": "Test fire alarms"}
+    },
+    "sensor": {
+      "bridge_message": {"name": "Last message"},
+      "last_event": {"name": "Last event"}
     }
   }
 }
-

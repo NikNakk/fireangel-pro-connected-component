@@ -2,5 +2,5 @@ homeassistant
 pytest
 pytest-cov
 pytest-homeassistant-custom-component
+pyserial-asyncio-fast==0.16
 ruff
-
