@@ -1,0 +1,14 @@
+{
+  "domain": "fireangel_pro_connected",
+  "name": "FireAngel Pro Connected",
+  "codeowners": ["@NikNakk"],
+  "config_flow": true,
+  "diagnostics": true,
+  "documentation": "https://github.com/NikNakk/fireangel-pro-connected-component",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/NikNakk/fireangel-pro-connected-component/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
+

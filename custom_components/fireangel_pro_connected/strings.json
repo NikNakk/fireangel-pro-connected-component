@@ -1,0 +1,15 @@
+{
+  "title": "FireAngel Pro Connected",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up FireAngel Pro Connected",
+        "description": "Set up the FireAngel Pro Connected integration. Device connection details will be added in a future version."
+      }
+    },
+    "abort": {
+      "already_configured": "FireAngel Pro Connected is already configured."
+    }
+  }
+}
+
