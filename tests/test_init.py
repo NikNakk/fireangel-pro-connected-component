@@ -52,3 +52,20 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
         )
 
         assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unload_failure(hass: HomeAssistant) -> None:
+    """Test that a failed platform unload leaves the bridge running."""
+    from custom_components.fireangel_pro_connected import async_unload_entry
+    from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
+
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_PORT: "/dev/ttyUSB0"})
+    entry.add_to_hass(hass)
+    bridge = FireAngelBridge(hass, entry)
+    bridge.async_stop = AsyncMock()
+    entry.runtime_data = bridge
+    with patch.object(
+        hass.config_entries, "async_unload_platforms", AsyncMock(return_value=False)
+    ):
+        assert not await async_unload_entry(hass, entry)
+    bridge.async_stop.assert_not_awaited()

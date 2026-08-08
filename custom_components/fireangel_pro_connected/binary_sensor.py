@@ -94,7 +94,7 @@ class FireAngelAlarmSensor(FireAngelDetectorEntity, BinarySensorEntity):
             or "CARBON MONOXIDE" in event
             or self.detector.model == "7803"
         ):
-            return BinarySensorDeviceClass.CARBON_MONOXIDE
+            return BinarySensorDeviceClass.CO
         if self.detector.device_type == DEVICE_TYPE_HEAT:
             return BinarySensorDeviceClass.HEAT
         return BinarySensorDeviceClass.SMOKE
