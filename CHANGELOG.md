@@ -16,6 +16,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Included the bridge's event-only WiSafe2 device in bulk legacy YAML imports
   instead of waiting for it to be rediscovered after setup.
 
+### Changed
+
+- Renamed detector **Base problem** entities to **Base status**. Their standard
+  Home Assistant problem states remain **OK** when the detector reports `ON`
+  and **Problem** when it reports `OFF` or `MISSING`.
+
 ## [0.1.0-beta.6] - 2026-08-09
 
 ### Added

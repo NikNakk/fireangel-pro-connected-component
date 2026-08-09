@@ -68,7 +68,7 @@
   "entity": {
     "binary_sensor": {
       "alarm": {"name": "Alarm"},
-      "base_problem": {"name": "Base problem"},
+      "base_problem": {"name": "Base status"},
       "battery_low": {"name": "Battery"},
       "bridge_connection": {"name": "Connection"}
     },
