@@ -101,7 +101,8 @@ def test_detector_type_inference_and_bridge_entities(hass: HomeAssistant) -> Non
     bridge, _entry = make_bridge(hass)
     bridge.devices["A1B2C3"] = DetectorState("A1B2C3", model="ED08")
     bridge.devices["C0FFEE"] = DetectorState("C0FFEE", model="7803")
-    bridge.devices["B1D6E0"] = DetectorState("B1D6E0", model="C304")
+    bridge.devices["D4E5F6"] = DetectorState("D4E5F6", device_type=DEVICE_TYPE_HEAT)
+    bridge.devices["F0A1B2"] = DetectorState("F0A1B2", model="C304")
 
     assert (
         FireAngelAlarmSensor(bridge, "A1B2C3").device_class
@@ -111,7 +112,12 @@ def test_detector_type_inference_and_bridge_entities(hass: HomeAssistant) -> Non
         FireAngelAlarmSensor(bridge, "C0FFEE").device_class
         is BinarySensorDeviceClass.CO
     )
-    bridge_entities = _detector_entities(bridge, "B1D6E0")
+    assert FireAngelEventSensor(bridge, "A1B2C3").icon == "mdi:smoke-detector"
+    assert FireAngelEventSensor(bridge, "C0FFEE").icon == "mdi:molecule-co"
+    assert FireAngelEventSensor(bridge, "D4E5F6").icon == "mdi:thermometer-alert"
+    bridge_entities = _detector_entities(bridge, "F0A1B2")
     assert [type(entity) for entity in bridge_entities] == [FireAngelAlarmSensor]
-    assert bridge.devices["B1D6E0"].device_type is None
-    assert bridge.devices["B1D6E0"].resolved_device_type == DEVICE_TYPE_BRIDGE
+    assert bridge_entities[0].icon == "mdi:access-point-network"
+    assert FireAngelEventSensor(bridge, "F0A1B2").icon == "mdi:access-point-network"
+    assert bridge.devices["F0A1B2"].device_type is None
+    assert bridge.devices["F0A1B2"].resolved_device_type == DEVICE_TYPE_BRIDGE

@@ -14,7 +14,12 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
 from .bridge import FireAngelBridge
-from .const import DEVICE_TYPE_CO, DEVICE_TYPE_HEAT
+from .const import (
+    DEVICE_TYPE_BRIDGE,
+    DEVICE_TYPE_CO,
+    DEVICE_TYPE_HEAT,
+    DEVICE_TYPE_ICONS,
+)
 from .entity import FireAngelBridgeEntity, FireAngelDetectorEntity
 
 
@@ -97,6 +102,13 @@ class FireAngelAlarmSensor(FireAngelDetectorEntity, BinarySensorEntity):
         if self.detector.resolved_device_type == DEVICE_TYPE_HEAT:
             return BinarySensorDeviceClass.HEAT
         return BinarySensorDeviceClass.SMOKE
+
+    @property
+    def icon(self) -> str | None:
+        """Use a bridge icon while retaining standard alarm-class icons."""
+        if self.detector.resolved_device_type == DEVICE_TYPE_BRIDGE:
+            return DEVICE_TYPE_ICONS[DEVICE_TYPE_BRIDGE]
+        return None
 
     @property
     def is_on(self) -> bool | None:

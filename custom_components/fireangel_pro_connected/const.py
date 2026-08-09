@@ -52,3 +52,10 @@ MODEL_DEVICE_TYPES: Final = {
     "7803": DEVICE_TYPE_CO,
     "C304": DEVICE_TYPE_BRIDGE,
 }
+
+DEVICE_TYPE_ICONS: Final = {
+    DEVICE_TYPE_SMOKE: "mdi:smoke-detector",
+    DEVICE_TYPE_HEAT: "mdi:thermometer-alert",
+    DEVICE_TYPE_CO: "mdi:molecule-co",
+    DEVICE_TYPE_BRIDGE: "mdi:access-point-network",
+}

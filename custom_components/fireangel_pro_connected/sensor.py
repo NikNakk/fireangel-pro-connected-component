@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
 from .bridge import FireAngelBridge
+from .const import DEVICE_TYPE_ICONS
 from .entity import FireAngelBridgeEntity, FireAngelDetectorEntity
 
 
@@ -64,6 +65,11 @@ class FireAngelEventSensor(FireAngelDetectorEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the latest detector event."""
         return self.detector.event
+
+    @property
+    def icon(self) -> str:
+        """Return an icon matching the detector or bridge-interface type."""
+        return DEVICE_TYPE_ICONS[self.detector.resolved_device_type]
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

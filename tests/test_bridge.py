@@ -82,10 +82,10 @@ def test_parse_case_insensitive_firmware_fields(hass: HomeAssistant) -> None:
     bridge = make_bridge(hass)
 
     bridge.async_process_line(
-        '{"Device":"5ABB05", "model":"ED08", "base":"OFF", "battery":"OK"}'
+        '{"Device":"EFA567", "model":"ED08", "base":"OFF", "battery":"OK"}'
     )
 
-    detector = bridge.devices["5ABB05"]
+    detector = bridge.devices["EFA567"]
     assert detector.model == "ED08"
     assert detector.base == "OFF"
     assert detector.battery == "OK"
