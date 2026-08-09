@@ -69,7 +69,7 @@
     "binary_sensor": {
       "alarm": {"name": "Alarm"},
       "base_problem": {"name": "Base problem"},
-      "battery_low": {"name": "Battery low"},
+      "battery_low": {"name": "Battery"},
       "bridge_connection": {"name": "Connection"}
     },
     "button": {

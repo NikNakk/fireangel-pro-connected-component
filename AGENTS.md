@@ -127,3 +127,15 @@ in CI.
 If behavior depends on upstream firmware details, inspect the current upstream
 source rather than guessing, and document any protocol inference in the change.
 
+## Changelog
+
+- Keep `CHANGELOG.md` updated for every user-visible change.
+- Add pending changes under `Unreleased`, using the Keep a Changelog categories
+  `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security` as
+  appropriate.
+- When preparing a release, move the pending entries into a versioned section
+  with its release date and update the comparison links at the bottom of the
+  file.
+- Call out breaking changes, migration steps, and safety-relevant behavior
+  explicitly. Do not add routine formatting or test-only changes unless they
+  materially affect users or contributors.
