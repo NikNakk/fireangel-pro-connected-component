@@ -24,12 +24,24 @@ async def async_setup_entry(
     bridge = entry.runtime_data
     async_add_entities(
         [FireAngelBridgeMessageSensor(entry)]
-        + [FireAngelEventSensor(bridge, device_id) for device_id in bridge.devices]
+        + [
+            entity
+            for device_id in bridge.devices
+            for entity in (
+                FireAngelEventSensor(bridge, device_id),
+                FireAngelModelCodeSensor(bridge, device_id),
+            )
+        ]
     )
 
     @callback
     def async_add_device(device_id: str) -> None:
-        async_add_entities([FireAngelEventSensor(bridge, device_id)])
+        async_add_entities(
+            [
+                FireAngelEventSensor(bridge, device_id),
+                FireAngelModelCodeSensor(bridge, device_id),
+            ]
+        )
 
     entry.async_on_unload(bridge.async_add_new_device_listener(async_add_device))
 
@@ -79,3 +91,22 @@ class FireAngelEventSensor(FireAngelDetectorEntity, SensorEntity):
             "model_code": self.detector.model,
             "last_seen": self.detector.last_seen,
         }
+
+
+class FireAngelModelCodeSensor(FireAngelDetectorEntity, SensorEntity):
+    """Show the raw model code reported by a detector."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_icon = "mdi:identifier"
+    _attr_translation_key = "model_code"
+
+    def __init__(self, bridge: FireAngelBridge, device_id: str) -> None:
+        """Initialize a model-code sensor."""
+        super().__init__(bridge, device_id)
+        self._attr_unique_id = f"fireangel_model_{device_id.lower()}"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the four-digit model code reported by the bridge."""
+        return self.detector.model

@@ -9,6 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.fireangel_pro_connected.const import (
     CONF_BAUD_RATE,
+    CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
@@ -17,6 +18,7 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEFAULT_BRIDGE_DEVICE_ID,
     DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
@@ -72,6 +74,7 @@ async def test_user_flow(hass: HomeAssistant) -> None:
     assert result["data"] == {
         CONF_PORT: PORT,
         CONF_BAUD_RATE: DEFAULT_BAUD_RATE,
+        CONF_BRIDGE_DEVICE_ID: DEFAULT_BRIDGE_DEVICE_ID,
     }
 
 
@@ -90,6 +93,24 @@ async def test_single_bridge_per_port(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_reject_invalid_bridge_device_id(hass: HomeAssistant) -> None:
+    """Require a six-digit hexadecimal bridge device ID."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_PORT: PORT,
+            CONF_BAUD_RATE: DEFAULT_BAUD_RATE,
+            CONF_BRIDGE_DEVICE_ID: "not-a-device",
+        },
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_BRIDGE_DEVICE_ID: "invalid_bridge_device_id"}
 
 
 async def test_manually_add_detector(hass: HomeAssistant) -> None:
@@ -286,6 +307,15 @@ async def test_import_legacy_package_errors(hass: HomeAssistant) -> None:
 
     for package, error in (
         ("template: []", "no_devices_found"),
+        (
+            """
+template:
+  - sensor:
+      - unique_id: fireangel_event_a1b2c3
+      - unique_id: fireangel_battery_a1b2c3
+""",
+            "no_devices_found",
+        ),
         (LEGACY_YAML, "all_devices_configured"),
     ):
         result = await hass.config_entries.options.async_init(entry.entry_id)

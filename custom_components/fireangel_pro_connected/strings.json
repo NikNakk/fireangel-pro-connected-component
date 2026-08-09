@@ -7,13 +7,18 @@
         "description": "Connect the Arduino by USB and enter its serial device path.",
         "data": {
           "port": "Serial device path",
-          "baud_rate": "Baud rate"
+          "baud_rate": "Baud rate",
+          "bridge_device_id": "Bridge WiSafe2 hex ID"
         },
         "data_description": {
           "port": "Use a stable /dev/serial/by-id/... path when available.",
-          "baud_rate": "The bridge firmware defaults to 115200 baud."
+          "baud_rate": "The bridge firmware defaults to 115200 baud.",
+          "bridge_device_id": "The six-digit device ID hardcoded in the Arduino firmware. The original firmware uses A5B813."
         }
       }
+    },
+    "error": {
+      "invalid_bridge_device_id": "Enter exactly six hexadecimal digits."
     },
     "abort": {
       "already_configured": "This serial bridge is already configured."
@@ -83,7 +88,8 @@
     },
     "sensor": {
       "bridge_message": {"name": "Last message"},
-      "last_event": {"name": "Last event"}
+      "last_event": {"name": "Last event"},
+      "model_code": {"name": "Model code"}
     }
   }
 }

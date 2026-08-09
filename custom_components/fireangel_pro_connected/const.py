@@ -5,6 +5,7 @@ from typing import Final
 DOMAIN: Final = "fireangel_pro_connected"
 
 CONF_BAUD_RATE: Final = "baud_rate"
+CONF_BRIDGE_DEVICE_ID: Final = "bridge_device_id"
 CONF_DEVICE_ID: Final = "device_id"
 CONF_DEVICES: Final = "devices"
 CONF_DEVICE_TYPE: Final = "device_type"
@@ -14,6 +15,7 @@ CONF_NAME: Final = "name"
 CONF_PORT: Final = "port"
 
 DEFAULT_BAUD_RATE: Final = 115200
+DEFAULT_BRIDGE_DEVICE_ID: Final = "A5B813"
 
 DEVICE_TYPE_AUTO: Final = "auto"
 DEVICE_TYPE_BRIDGE: Final = "bridge"
@@ -42,15 +44,14 @@ MODEL_NAMES: Final = {
     "C304": "W2-SVP-630",
 }
 
-# The W2-SVP-630 is the WiSafe2 interface used by the Arduino bridge rather
-# than an alarm. The other mappings are safe detector-type inferences; heat
-# alarms remain user-configurable because the firmware reports smoke and heat
-# alike as FIRE.
+# These mappings are safe detector-type inferences; heat alarms remain
+# user-configurable because the firmware reports smoke and heat alike as FIRE.
+# Bridge identity is configured separately because its WiSafe2 module is
+# harvested from another device and its model code does not identify its role.
 MODEL_DEVICE_TYPES: Final = {
     "ED08": DEVICE_TYPE_SMOKE,
     "1103": DEVICE_TYPE_SMOKE,
     "7803": DEVICE_TYPE_CO,
-    "C304": DEVICE_TYPE_BRIDGE,
 }
 
 DEVICE_TYPE_ICONS: Final = {

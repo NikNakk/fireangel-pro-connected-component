@@ -20,6 +20,7 @@ from serial import SerialException
 
 from .const import (
     CONF_BAUD_RATE,
+    CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
@@ -27,6 +28,7 @@ from .const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEFAULT_BRIDGE_DEVICE_ID,
     DEVICE_TYPE_AUTO,
     DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
@@ -57,17 +59,20 @@ class DetectorState:
     base: str | None = None
     battery: str | None = None
     last_seen: datetime | None = None
+    bridge_device: bool = False
 
     @property
     def resolved_device_type(self) -> str:
         """Return the configured or safely inferred WiSafe2 device type."""
-        if self.device_type not in (None, DEVICE_TYPE_AUTO):
-            return self.device_type
+        if self.bridge_device:
+            return DEVICE_TYPE_BRIDGE
         inferred = MODEL_DEVICE_TYPES.get(self.model or "")
-        if inferred in (DEVICE_TYPE_BRIDGE, DEVICE_TYPE_CO):
+        if inferred == DEVICE_TYPE_CO:
             return inferred
         if "CARBON MONOXIDE" in (self.event or ""):
             return DEVICE_TYPE_CO
+        if self.device_type not in (None, DEVICE_TYPE_AUTO):
+            return self.device_type
         return inferred or DEVICE_TYPE_SMOKE
 
     @property
@@ -85,6 +90,9 @@ class FireAngelBridge:
         self.entry = entry
         self.port: str = entry.data[CONF_PORT]
         self.baud_rate: int = entry.data.get(CONF_BAUD_RATE, DEFAULT_BAUD_RATE)
+        self.bridge_device_id: str = entry.data.get(
+            CONF_BRIDGE_DEVICE_ID, DEFAULT_BRIDGE_DEVICE_ID
+        )
         self.devices: dict[str, DetectorState] = {}
         self.connected = False
         self.last_message: str | None = None
@@ -107,6 +115,7 @@ class FireAngelBridge:
                     model=model,
                     device_type=device.get(CONF_DEVICE_TYPE),
                     name=device.get(CONF_NAME),
+                    bridge_device=device_id == self.bridge_device_id,
                 )
 
     async def async_load_persisted_state(self) -> None:
@@ -238,7 +247,10 @@ class FireAngelBridge:
             return
 
         is_new = device_id not in self.devices
-        state = self.devices.setdefault(device_id, DetectorState(device_id))
+        state = self.devices.setdefault(
+            device_id,
+            DetectorState(device_id, bridge_device=device_id == self.bridge_device_id),
+        )
         model = self.normalize_model(fields.get("model"))
         inventory_changed = False
         if model is not None:
@@ -274,6 +286,7 @@ class FireAngelBridge:
             model=self.normalize_model(model),
             device_type=device_type,
             name=name,
+            bridge_device=normalized_id == self.bridge_device_id,
         )
         for listener in tuple(self._new_device_callbacks):
             listener(normalized_id)

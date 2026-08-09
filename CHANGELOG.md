@@ -9,15 +9,28 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0-beta.8] - 2026-08-09
 
+### Added
+
+- Added a disabled-by-default diagnostic **Model code** sensor to each detector
+  so unknown four-digit WiSafe2 model codes can be identified.
+
+### Changed
+
+- Identified the Arduino bridge's harvested WiSafe2 device by a configurable
+  six-digit ID instead of its donor device's model code. New setups default to
+  the original firmware ID `A5B813`; existing setups use the same default.
+
 ### Fixed
 
 - Classified known smoke and carbon-monoxide models automatically while
-  retaining manual heat-alarm selection, and stopped creating meaningless
-  battery and base-status entities for the bridge's own W2-SVP-630 WiSafe2
-  interface. Its alarm and test-event reporting remain available, with event
-  icons reflecting smoke, heat, carbon-monoxide, or bridge-interface types.
-  Previously registered bridge battery and base-status entities are removed on
-  upgrade or when a later partial firmware record identifies the interface.
+  retaining manual heat-alarm selection. Definitive carbon-monoxide events,
+  known CO model codes, and the configured bridge ID override a manual or
+  legacy-imported smoke or heat type.
+- Stopped creating meaningless battery and base-status entities for the
+  configured bridge WiSafe2 device. Its alarm and test-event reporting remain
+  available, with event icons reflecting smoke, heat, carbon-monoxide, or
+  bridge-interface types. Previously registered bridge battery and base-status
+  entities are removed on upgrade.
 
 ## [0.1.0-beta.7] - 2026-08-09
 

@@ -41,12 +41,14 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
 
         registry = er.async_get(hass)
         assert registry.async_get_entity_id("sensor", DOMAIN, "fireangel_event_a1b2c3")
+        assert registry.async_get_entity_id("sensor", DOMAIN, "fireangel_model_a1b2c3")
 
         entry.runtime_data.async_process_line(
             '{"device":"C0FFEE", "model":"1103", "event":"FIRE TEST", "result":"PASS"}'
         )
         await hass.async_block_till_done()
         assert registry.async_get_entity_id("sensor", DOMAIN, "fireangel_event_c0ffee")
+        assert registry.async_get_entity_id("sensor", DOMAIN, "fireangel_model_c0ffee")
         assert registry.async_get_entity_id(
             "binary_sensor", DOMAIN, "fireangel_alarm_c0ffee"
         )

@@ -13,6 +13,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_BAUD_RATE,
+    CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
@@ -21,6 +22,7 @@ from .const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEFAULT_BRIDGE_DEVICE_ID,
     DEVICE_TYPE_AUTO,
     DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
@@ -108,16 +110,25 @@ class FireAngelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Configure the Arduino serial connection."""
         errors: dict[str, str] = {}
         if user_input is not None:
+            from .bridge import FireAngelBridge  # noqa: PLC0415
+
             port = user_input[CONF_PORT].strip()
-            await self.async_set_unique_id(port)
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title="FireAngel Pro Connected",
-                data={
-                    CONF_PORT: port,
-                    CONF_BAUD_RATE: user_input[CONF_BAUD_RATE],
-                },
+            bridge_device_id = FireAngelBridge.normalize_device_id(
+                user_input[CONF_BRIDGE_DEVICE_ID]
             )
+            if bridge_device_id is None:
+                errors[CONF_BRIDGE_DEVICE_ID] = "invalid_bridge_device_id"
+            else:
+                await self.async_set_unique_id(port)
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title="FireAngel Pro Connected",
+                    data={
+                        CONF_PORT: port,
+                        CONF_BAUD_RATE: user_input[CONF_BAUD_RATE],
+                        CONF_BRIDGE_DEVICE_ID: bridge_device_id,
+                    },
+                )
 
         schema = vol.Schema(
             {
@@ -125,6 +136,9 @@ class FireAngelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_BAUD_RATE, default=DEFAULT_BAUD_RATE): vol.All(
                     vol.Coerce(int), vol.Range(min=1)
                 ),
+                vol.Required(
+                    CONF_BRIDGE_DEVICE_ID, default=DEFAULT_BRIDGE_DEVICE_ID
+                ): str,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)

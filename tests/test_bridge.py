@@ -11,12 +11,14 @@ from serial import SerialException
 
 from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
 from custom_components.fireangel_pro_connected.const import (
+    CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
     CONF_MODEL,
     CONF_NAME,
     CONF_PORT,
+    DEFAULT_BRIDGE_DEVICE_ID,
     DEVICE_TYPE_HEAT,
     DOMAIN,
 )
@@ -53,6 +55,27 @@ def test_parse_message_and_discover_device(hass: HomeAssistant) -> None:
     assert bridge.entry.options[CONF_DEVICES] == [
         {CONF_DEVICE_ID: "A1B2C3", "model": "1103"}
     ]
+
+
+def test_bridge_role_uses_configured_device_id(hass: HomeAssistant) -> None:
+    """Identify the bridge by device ID without classifying its donor model."""
+    bridge = make_bridge(hass)
+    bridge.async_process_line(
+        f'{{"device":"{DEFAULT_BRIDGE_DEVICE_ID}", "model":"C304"}}'
+    )
+    bridge.async_process_line('{"device":"F0A1B2", "model":"C304"}')
+
+    assert bridge.devices[DEFAULT_BRIDGE_DEVICE_ID].is_bridge_device
+    assert not bridge.devices["F0A1B2"].is_bridge_device
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_PORT: "/dev/ttyUSB1", CONF_BRIDGE_DEVICE_ID: "F0A1B2"},
+    )
+    entry.add_to_hass(hass)
+    configured = FireAngelBridge(hass, entry)
+    configured.async_process_line('{"device":"F0A1B2", "model":"ED08"}')
+    assert configured.devices["F0A1B2"].is_bridge_device
 
 
 def test_merge_partial_messages_without_rediscovery(hass: HomeAssistant) -> None:
@@ -170,6 +193,15 @@ async def test_persist_and_restore_status_outside_entry_options(
     assert detector.result == "PASS"
     assert detector.base == "ON"
     assert detector.battery == "LOW"
+
+    restored._store.async_load = AsyncMock(
+        return_value={
+            "A1B2C3": {"event": "CLEAR"},
+            "FFFFFF": {"event": "FIRE EMERGENCY"},
+        }
+    )
+    await restored.async_load_persisted_state()
+    assert detector.event == "CLEAR"
 
 
 async def test_serial_lifecycle(hass: HomeAssistant) -> None:
