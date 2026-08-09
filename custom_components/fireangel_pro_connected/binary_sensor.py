@@ -2,29 +2,35 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
 from .bridge import FireAngelBridge
-from .const import DEVICE_TYPE_CO, DEVICE_TYPE_HEAT
+from .const import (
+    DEVICE_TYPE_BRIDGE,
+    DEVICE_TYPE_CO,
+    DEVICE_TYPE_HEAT,
+    DEVICE_TYPE_ICONS,
+    DOMAIN,
+)
 from .entity import FireAngelBridgeEntity, FireAngelDetectorEntity
 
 
 async def async_setup_entry(
-    hass: Any,
+    hass: HomeAssistant,
     entry: FireAngelConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up FireAngel binary sensors."""
     bridge = entry.runtime_data
+    _async_remove_bridge_diagnostics(hass, bridge)
     async_add_entities(
         [FireAngelBridgeConnectionSensor(entry)]
         + [
@@ -39,17 +45,45 @@ async def async_setup_entry(
         async_add_entities(_detector_entities(bridge, device_id))
 
     entry.async_on_unload(bridge.async_add_new_device_listener(async_add_device))
+    entry.async_on_unload(
+        bridge.async_add_update_listener(
+            lambda: _async_remove_bridge_diagnostics(hass, bridge)
+        )
+    )
+
+
+@callback
+def _async_remove_bridge_diagnostics(
+    hass: HomeAssistant, bridge: FireAngelBridge
+) -> None:
+    """Remove battery and base entities once a device is known as the bridge."""
+    registry = er.async_get(hass)
+    for device_id, detector in bridge.devices.items():
+        if not detector.is_bridge_device:
+            continue
+        for unique_id in (
+            f"fireangel_battery_{device_id.lower()}",
+            f"fireangel_onbase_{device_id.lower()}",
+        ):
+            if entity_id := registry.async_get_entity_id(
+                "binary_sensor", DOMAIN, unique_id
+            ):
+                registry.async_remove(entity_id)
 
 
 def _detector_entities(
     bridge: FireAngelBridge, device_id: str
 ) -> list[BinarySensorEntity]:
     """Create binary sensors for one detector."""
-    return [
-        FireAngelAlarmSensor(bridge, device_id),
-        FireAngelBatterySensor(bridge, device_id),
-        FireAngelBaseSensor(bridge, device_id),
-    ]
+    entities: list[BinarySensorEntity] = [FireAngelAlarmSensor(bridge, device_id)]
+    if not bridge.devices[device_id].is_bridge_device:
+        entities.extend(
+            [
+                FireAngelBatterySensor(bridge, device_id),
+                FireAngelBaseSensor(bridge, device_id),
+            ]
+        )
+    return entities
 
 
 class FireAngelBridgeConnectionSensor(FireAngelBridgeEntity, BinarySensorEntity):
@@ -88,16 +122,18 @@ class FireAngelAlarmSensor(FireAngelDetectorEntity, BinarySensorEntity):
     @property
     def device_class(self) -> BinarySensorDeviceClass:
         """Return the best device class supported by the bridge message."""
-        event = self.detector.event or ""
-        if (
-            self.detector.device_type == DEVICE_TYPE_CO
-            or "CARBON MONOXIDE" in event
-            or self.detector.model == "7803"
-        ):
+        if self.detector.resolved_device_type == DEVICE_TYPE_CO:
             return BinarySensorDeviceClass.CO
-        if self.detector.device_type == DEVICE_TYPE_HEAT:
+        if self.detector.resolved_device_type == DEVICE_TYPE_HEAT:
             return BinarySensorDeviceClass.HEAT
         return BinarySensorDeviceClass.SMOKE
+
+    @property
+    def icon(self) -> str | None:
+        """Use a bridge icon while retaining standard alarm-class icons."""
+        if self.detector.resolved_device_type == DEVICE_TYPE_BRIDGE:
+            return DEVICE_TYPE_ICONS[DEVICE_TYPE_BRIDGE]
+        return None
 
     @property
     def is_on(self) -> bool | None:

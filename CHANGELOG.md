@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.8] - 2026-08-09
+
+### Fixed
+
+- Classified known smoke and carbon-monoxide models automatically while
+  retaining manual heat-alarm selection, and stopped creating meaningless
+  battery and base-status entities for the bridge's own W2-SVP-630 WiSafe2
+  interface. Its alarm and test-event reporting remain available, with event
+  icons reflecting smoke, heat, carbon-monoxide, or bridge-interface types.
+  Previously registered bridge battery and base-status entities are removed on
+  upgrade or when a later partial firmware record identifies the interface.
+
+## [0.1.0-beta.7] - 2026-08-09
+
 ### Fixed
 
 - Persisted each detector's latest event, test result, battery condition, and
@@ -101,7 +115,9 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.6...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.8...HEAD
+[0.1.0-beta.8]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.7...v0.1.0-beta.8
+[0.1.0-beta.7]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.6...v0.1.0-beta.7
 [0.1.0-beta.6]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.5...v0.1.0-beta.6
 [0.1.0-beta.5]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.4...v0.1.0-beta.5
 [0.1.0-beta.4]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.3...v0.1.0-beta.4

@@ -16,6 +16,7 @@ CONF_PORT: Final = "port"
 DEFAULT_BAUD_RATE: Final = 115200
 
 DEVICE_TYPE_AUTO: Final = "auto"
+DEVICE_TYPE_BRIDGE: Final = "bridge"
 DEVICE_TYPE_CO: Final = "carbon_monoxide"
 DEVICE_TYPE_HEAT: Final = "heat"
 DEVICE_TYPE_SMOKE: Final = "smoke"
@@ -39,4 +40,22 @@ MODEL_NAMES: Final = {
     "1103": "WST-630",
     "7803": "W2-CO-10X",
     "C304": "W2-SVP-630",
+}
+
+# The W2-SVP-630 is the WiSafe2 interface used by the Arduino bridge rather
+# than an alarm. The other mappings are safe detector-type inferences; heat
+# alarms remain user-configurable because the firmware reports smoke and heat
+# alike as FIRE.
+MODEL_DEVICE_TYPES: Final = {
+    "ED08": DEVICE_TYPE_SMOKE,
+    "1103": DEVICE_TYPE_SMOKE,
+    "7803": DEVICE_TYPE_CO,
+    "C304": DEVICE_TYPE_BRIDGE,
+}
+
+DEVICE_TYPE_ICONS: Final = {
+    DEVICE_TYPE_SMOKE: "mdi:smoke-detector",
+    DEVICE_TYPE_HEAT: "mdi:thermometer-alert",
+    DEVICE_TYPE_CO: "mdi:molecule-co",
+    DEVICE_TYPE_BRIDGE: "mdi:access-point-network",
 }
