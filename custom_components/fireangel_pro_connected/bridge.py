@@ -27,6 +27,11 @@ from .const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEVICE_TYPE_AUTO,
+    DEVICE_TYPE_BRIDGE,
+    DEVICE_TYPE_CO,
+    DEVICE_TYPE_SMOKE,
+    MODEL_DEVICE_TYPES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +57,23 @@ class DetectorState:
     base: str | None = None
     battery: str | None = None
     last_seen: datetime | None = None
+
+    @property
+    def resolved_device_type(self) -> str:
+        """Return the configured or safely inferred WiSafe2 device type."""
+        if self.device_type not in (None, DEVICE_TYPE_AUTO):
+            return self.device_type
+        inferred = MODEL_DEVICE_TYPES.get(self.model or "")
+        if inferred in (DEVICE_TYPE_BRIDGE, DEVICE_TYPE_CO):
+            return inferred
+        if "CARBON MONOXIDE" in (self.event or ""):
+            return DEVICE_TYPE_CO
+        return inferred or DEVICE_TYPE_SMOKE
+
+    @property
+    def is_bridge_device(self) -> bool:
+        """Return whether this is the WiSafe2 interface attached to Arduino."""
+        return self.resolved_device_type == DEVICE_TYPE_BRIDGE
 
 
 class FireAngelBridge:
@@ -218,7 +240,9 @@ class FireAngelBridge:
         is_new = device_id not in self.devices
         state = self.devices.setdefault(device_id, DetectorState(device_id))
         model = self.normalize_model(fields.get("model"))
+        inventory_changed = False
         if model is not None:
+            inventory_changed = state.model != model
             state.model = model
         for key in ("event", "result", "base", "battery"):
             if key in fields:
@@ -226,8 +250,9 @@ class FireAngelBridge:
         state.last_seen = now
 
         self._store.async_delay_save(self._stored_status)
-        if is_new:
+        if is_new or inventory_changed:
             self._persist_devices()
+        if is_new:
             for listener in tuple(self._new_device_callbacks):
                 listener(device_id)
         self._notify_update()

@@ -22,6 +22,7 @@ from .const import (
     CONF_PORT,
     DEFAULT_BAUD_RATE,
     DEVICE_TYPE_AUTO,
+    DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
     DEVICE_TYPE_SMOKE,
@@ -80,14 +81,15 @@ def _parse_legacy_package(value: str) -> list[dict[str, str]]:
     devices = []
     for device_id, kinds in entity_kinds.items():
         # Alarm devices have all three entities, while the bridge's WiSafe2
-        # protocol device has only an event entity. Import both so migration
-        # creates every device that the Arduino will subsequently report.
+        # protocol device has only an event entity.
         if kinds not in ({"event"}, {"event", "battery", "onbase"}):
             continue
         device = {CONF_DEVICE_ID: device_id}
+        if kinds == {"event"}:
+            device[CONF_DEVICE_TYPE] = DEVICE_TYPE_BRIDGE
         legacy_name = event_names.get(device_id, "")
         device_type = _legacy_detector_type(legacy_name)
-        if device_type != DEVICE_TYPE_AUTO:
+        if kinds != {"event"} and device_type != DEVICE_TYPE_AUTO:
             device[CONF_DEVICE_TYPE] = device_type
         if device_name := _legacy_detector_name(legacy_name):
             device[CONF_NAME] = device_name

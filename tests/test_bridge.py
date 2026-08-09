@@ -72,6 +72,9 @@ def test_merge_partial_messages_without_rediscovery(hass: HomeAssistant) -> None
     assert detector.base == "ON"
     assert detector.battery == "LOW"
     assert discovered == ["D4E5F6"]
+    assert bridge.entry.options[CONF_DEVICES] == [
+        {CONF_DEVICE_ID: "D4E5F6", CONF_MODEL: "7803"}
+    ]
 
 
 def test_parse_case_insensitive_firmware_fields(hass: HomeAssistant) -> None:
@@ -79,10 +82,10 @@ def test_parse_case_insensitive_firmware_fields(hass: HomeAssistant) -> None:
     bridge = make_bridge(hass)
 
     bridge.async_process_line(
-        '{"Device":"5ABB05", "model":"ED08", "base":"OFF", "battery":"OK"}'
+        '{"Device":"EFA567", "model":"ED08", "base":"OFF", "battery":"OK"}'
     )
 
-    detector = bridge.devices["5ABB05"]
+    detector = bridge.devices["EFA567"]
     assert detector.model == "ED08"
     assert detector.base == "OFF"
     assert detector.battery == "OK"
