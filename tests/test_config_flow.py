@@ -235,6 +235,32 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
     ]
 
 
+async def test_import_unnamed_legacy_detector(hass: HomeAssistant) -> None:
+    """Test importing an unnamed detector while the entry is not loaded."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_PORT: PORT})
+    entry.add_to_hass(hass)
+    package = """
+template:
+  - sensor:
+      - unique_id: fireangel_event_a1b2c3
+      - unique_id: fireangel_battery_a1b2c3
+        name: Garage battery status
+      - unique_id: fireangel_onbase_a1b2c3
+        name: Garage base status
+"""
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "import_legacy_yaml"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_LEGACY_YAML: package}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_DEVICES] == [{CONF_DEVICE_ID: "A1B2C3"}]
+
+
 async def test_import_legacy_package_errors(hass: HomeAssistant) -> None:
     """Test missing and already-imported detector errors."""
     entry = MockConfigEntry(
