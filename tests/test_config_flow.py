@@ -17,6 +17,7 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
     DEVICE_TYPE_SMOKE,
@@ -218,7 +219,11 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICES] == [
         {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
-        {CONF_DEVICE_ID: "A5B813", CONF_NAME: "Built in Test Function"},
+        {
+            CONF_DEVICE_ID: "A5B813",
+            CONF_DEVICE_TYPE: DEVICE_TYPE_BRIDGE,
+            CONF_NAME: "Built in Test Function",
+        },
         {
             CONF_DEVICE_ID: "92BF1A",
             CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
@@ -231,7 +236,7 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
         },
     ]
     assert bridge.async_add_manual_device.call_args_list == [
-        (("A5B813", None, "auto", "Built in Test Function"),),
+        (("A5B813", None, DEVICE_TYPE_BRIDGE, "Built in Test Function"),),
         (("92BF1A", None, DEVICE_TYPE_HEAT, "Kitchen Fireangel"),),
         (("D72C06", None, DEVICE_TYPE_CO, "Laundry Fireangel"),),
     ]

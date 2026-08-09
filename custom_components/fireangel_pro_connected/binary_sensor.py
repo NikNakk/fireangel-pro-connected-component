@@ -45,11 +45,15 @@ def _detector_entities(
     bridge: FireAngelBridge, device_id: str
 ) -> list[BinarySensorEntity]:
     """Create binary sensors for one detector."""
-    return [
-        FireAngelAlarmSensor(bridge, device_id),
-        FireAngelBatterySensor(bridge, device_id),
-        FireAngelBaseSensor(bridge, device_id),
-    ]
+    entities: list[BinarySensorEntity] = [FireAngelAlarmSensor(bridge, device_id)]
+    if not bridge.devices[device_id].is_bridge_device:
+        entities.extend(
+            [
+                FireAngelBatterySensor(bridge, device_id),
+                FireAngelBaseSensor(bridge, device_id),
+            ]
+        )
+    return entities
 
 
 class FireAngelBridgeConnectionSensor(FireAngelBridgeEntity, BinarySensorEntity):
@@ -88,14 +92,9 @@ class FireAngelAlarmSensor(FireAngelDetectorEntity, BinarySensorEntity):
     @property
     def device_class(self) -> BinarySensorDeviceClass:
         """Return the best device class supported by the bridge message."""
-        event = self.detector.event or ""
-        if (
-            self.detector.device_type == DEVICE_TYPE_CO
-            or "CARBON MONOXIDE" in event
-            or self.detector.model == "7803"
-        ):
+        if self.detector.resolved_device_type == DEVICE_TYPE_CO:
             return BinarySensorDeviceClass.CO
-        if self.detector.device_type == DEVICE_TYPE_HEAT:
+        if self.detector.resolved_device_type == DEVICE_TYPE_HEAT:
             return BinarySensorDeviceClass.HEAT
         return BinarySensorDeviceClass.SMOKE
 

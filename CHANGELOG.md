@@ -9,6 +9,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Classified known smoke and carbon-monoxide models automatically while
+  retaining manual heat-alarm selection, and stopped creating meaningless
+  battery and base-status entities for the bridge's own W2-SVP-630 WiSafe2
+  interface. Its alarm and test-event reporting remain available.
 - Persisted each detector's latest event, test result, battery condition, and
   base condition so entity status survives Home Assistant restarts until the
   Arduino reports a change. Runtime status is kept in integration storage,

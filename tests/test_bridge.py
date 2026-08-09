@@ -72,6 +72,9 @@ def test_merge_partial_messages_without_rediscovery(hass: HomeAssistant) -> None
     assert detector.base == "ON"
     assert detector.battery == "LOW"
     assert discovered == ["D4E5F6"]
+    assert bridge.entry.options[CONF_DEVICES] == [
+        {CONF_DEVICE_ID: "D4E5F6", CONF_MODEL: "7803"}
+    ]
 
 
 def test_parse_case_insensitive_firmware_fields(hass: HomeAssistant) -> None:
