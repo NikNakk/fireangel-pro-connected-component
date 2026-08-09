@@ -179,24 +179,33 @@ class FireAngelBridge:
             self._notify_update()
             return
 
-        if "heartBeat" in payload:
+        # Firmware variants differ in the capitalization of JSON field names
+        # (notably ``device`` versus ``Device``). Treat protocol keys as
+        # case-insensitive while leaving their values untouched.
+        fields = {
+            key.casefold(): value
+            for key, value in payload.items()
+            if isinstance(key, str)
+        }
+
+        if "heartbeat" in fields:
             self.last_heartbeat = now
             self._notify_update()
             return
 
-        device_id = self.normalize_device_id(str(payload.get("device", "")))
+        device_id = self.normalize_device_id(str(fields.get("device", "")))
         if device_id is None:
             self._notify_update()
             return
 
         is_new = device_id not in self.devices
         state = self.devices.setdefault(device_id, DetectorState(device_id))
-        model = self.normalize_model(payload.get("model"))
+        model = self.normalize_model(fields.get("model"))
         if model is not None:
             state.model = model
         for key in ("event", "result", "base", "battery"):
-            if key in payload:
-                setattr(state, key, str(payload[key]).upper())
+            if key in fields:
+                setattr(state, key, str(fields[key]).upper())
         state.last_seen = now
 
         if is_new:

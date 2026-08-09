@@ -74,6 +74,21 @@ def test_merge_partial_messages_without_rediscovery(hass: HomeAssistant) -> None
     assert discovered == ["D4E5F6"]
 
 
+def test_parse_case_insensitive_firmware_fields(hass: HomeAssistant) -> None:
+    """Test field capitalization used by older firmware variants."""
+    bridge = make_bridge(hass)
+
+    bridge.async_process_line(
+        '{"Device":"5ABB05", "model":"ED08", "base":"OFF", "battery":"OK"}'
+    )
+
+    detector = bridge.devices["5ABB05"]
+    assert detector.model == "ED08"
+    assert detector.base == "OFF"
+    assert detector.battery == "OK"
+    assert detector.last_seen is not None
+
+
 def test_heartbeat_and_plain_status(hass: HomeAssistant) -> None:
     """Test heartbeat JSON and non-JSON command responses."""
     bridge = make_bridge(hass)
