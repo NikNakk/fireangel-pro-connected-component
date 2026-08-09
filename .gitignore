@@ -5,7 +5,5 @@ __pycache__/
 .ruff_cache/
 .venv/
 htmlcov/
-.devcontainer/config/.storage/
-.devcontainer/config/home-assistant.log*
-.devcontainer/config/home-assistant_v2.db*
-
+.devcontainer/config/*
+!.devcontainer/config/configuration.yaml
