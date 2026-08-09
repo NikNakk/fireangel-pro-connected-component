@@ -14,6 +14,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   battery and base-status entities for the bridge's own W2-SVP-630 WiSafe2
   interface. Its alarm and test-event reporting remain available, with event
   icons reflecting smoke, heat, carbon-monoxide, or bridge-interface types.
+  Previously registered bridge battery and base-status entities are removed on
+  upgrade or when a later partial firmware record identifies the interface.
 - Persisted each detector's latest event, test result, battery condition, and
   base condition so entity status survives Home Assistant restarts until the
   Arduino reports a change. Runtime status is kept in integration storage,

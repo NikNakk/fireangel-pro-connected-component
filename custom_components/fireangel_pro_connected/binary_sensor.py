@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
@@ -19,17 +18,19 @@ from .const import (
     DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
     DEVICE_TYPE_ICONS,
+    DOMAIN,
 )
 from .entity import FireAngelBridgeEntity, FireAngelDetectorEntity
 
 
 async def async_setup_entry(
-    hass: Any,
+    hass: HomeAssistant,
     entry: FireAngelConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up FireAngel binary sensors."""
     bridge = entry.runtime_data
+    _async_remove_bridge_diagnostics(hass, bridge)
     async_add_entities(
         [FireAngelBridgeConnectionSensor(entry)]
         + [
@@ -44,6 +45,30 @@ async def async_setup_entry(
         async_add_entities(_detector_entities(bridge, device_id))
 
     entry.async_on_unload(bridge.async_add_new_device_listener(async_add_device))
+    entry.async_on_unload(
+        bridge.async_add_update_listener(
+            lambda: _async_remove_bridge_diagnostics(hass, bridge)
+        )
+    )
+
+
+@callback
+def _async_remove_bridge_diagnostics(
+    hass: HomeAssistant, bridge: FireAngelBridge
+) -> None:
+    """Remove battery and base entities once a device is known as the bridge."""
+    registry = er.async_get(hass)
+    for device_id, detector in bridge.devices.items():
+        if not detector.is_bridge_device:
+            continue
+        for unique_id in (
+            f"fireangel_battery_{device_id.lower()}",
+            f"fireangel_onbase_{device_id.lower()}",
+        ):
+            if entity_id := registry.async_get_entity_id(
+                "binary_sensor", DOMAIN, unique_id
+            ):
+                registry.async_remove(entity_id)
 
 
 def _detector_entities(

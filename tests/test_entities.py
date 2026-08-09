@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.fireangel_pro_connected.binary_sensor import (
@@ -12,6 +13,7 @@ from custom_components.fireangel_pro_connected.binary_sensor import (
     FireAngelBatterySensor,
     FireAngelBridgeConnectionSensor,
     _detector_entities,
+    async_setup_entry,
 )
 from custom_components.fireangel_pro_connected.bridge import (
     DetectorState,
@@ -121,3 +123,33 @@ def test_detector_type_inference_and_bridge_entities(hass: HomeAssistant) -> Non
     assert FireAngelEventSensor(bridge, "F0A1B2").icon == "mdi:access-point-network"
     assert bridge.devices["F0A1B2"].device_type is None
     assert bridge.devices["F0A1B2"].resolved_device_type == DEVICE_TYPE_BRIDGE
+
+
+async def test_remove_registered_bridge_diagnostics(hass: HomeAssistant) -> None:
+    """Remove stale diagnostics after a partial message identifies the bridge."""
+    bridge, _entry = make_bridge(hass)
+    bridge.devices["A1B2C3"] = DetectorState("A1B2C3")
+    bridge.devices["F0A1B2"] = DetectorState("F0A1B2", model="C304")
+    registry = er.async_get(hass)
+    battery = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_battery_a1b2c3"
+    )
+    base = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_onbase_a1b2c3"
+    )
+    existing_bridge_battery = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_battery_f0a1b2"
+    )
+    existing_bridge_base = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_onbase_f0a1b2"
+    )
+
+    await async_setup_entry(hass, _entry, Mock())
+    assert registry.async_get(battery.entity_id) is not None
+    assert registry.async_get(base.entity_id) is not None
+    assert registry.async_get(existing_bridge_battery.entity_id) is None
+    assert registry.async_get(existing_bridge_base.entity_id) is None
+
+    bridge.async_process_line('{"device":"A1B2C3", "model":"C304"}')
+    assert registry.async_get(battery.entity_id) is None
+    assert registry.async_get(base.entity_id) is None
