@@ -35,13 +35,26 @@ Without a devcontainer, create a Python virtual environment and install
 
 ## Installation
 
-1. Copy `custom_components/fireangel_pro_connected` into the
-   `custom_components` directory in your Home Assistant configuration.
-2. Remove or disable any existing `serial` sensor that opens the same Arduino;
+### HACS
+
+1. In HACS, open **Integrations**, select the three-dot menu, and choose
+   **Custom repositories**.
+2. Add `https://github.com/NikNakk/fireangel-pro-connected-component` as an
+   **Integration** repository.
+3. Install **FireAngel Pro Connected**, then restart Home Assistant.
+
+### Manual
+
+Copy `custom_components/fireangel_pro_connected` into the `custom_components`
+directory in your Home Assistant configuration, then restart Home Assistant.
+
+### Setup
+
+1. Remove or disable any existing `serial` sensor that opens the same Arduino;
    only one process can own a serial port at a time.
-3. Restart Home Assistant, then add **FireAngel Pro Connected** from
+2. Add **FireAngel Pro Connected** from
    **Settings → Devices & services**.
-4. Enter the Arduino path shown by Home Assistant's hardware page. Prefer a
+3. Enter the Arduino path shown by Home Assistant's hardware page. Prefer a
    stable `/dev/serial/by-id/...` path. Keep the default baud rate of `115200`
    for the upstream firmware.
 
