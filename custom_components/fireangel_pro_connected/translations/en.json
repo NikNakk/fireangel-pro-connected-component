@@ -23,7 +23,8 @@
     "step": {
       "init": {
         "menu_options": {
-          "add_device": "Add a detector by hex ID"
+          "add_device": "Add a detector by hex ID",
+          "import_legacy_yaml": "Import legacy package YAML"
         }
       },
       "add_device": {
@@ -37,12 +38,21 @@
         "data_description": {
           "device_type": "The bridge reports both smoke and heat events as FIRE, so choose the type when known."
         }
+      },
+      "import_legacy_yaml": {
+        "title": "Import legacy package YAML",
+        "description": "Paste the contents of the old FireAngel package. Detectors with matching event, battery, and base-status entities will be added. Firmware pseudo-devices and detectors already configured are ignored.",
+        "data": {
+          "legacy_yaml": "Legacy package YAML"
+        }
       }
     },
     "error": {
       "invalid_device_id": "Enter exactly six hexadecimal digits.",
       "invalid_model": "Enter exactly four hexadecimal digits.",
-      "already_configured": "This detector has already been added."
+      "already_configured": "This detector has already been added.",
+      "no_devices_found": "No detector definitions were found. Paste the complete legacy package YAML.",
+      "all_devices_configured": "Every detector found in this package is already configured."
     }
   },
   "selector": {

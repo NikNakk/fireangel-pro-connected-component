@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import voluptuous as vol
@@ -15,13 +16,67 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
+    CONF_LEGACY_YAML,
     CONF_MODEL,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
     DEVICE_TYPE_AUTO,
+    DEVICE_TYPE_CO,
+    DEVICE_TYPE_HEAT,
+    DEVICE_TYPE_SMOKE,
     DEVICE_TYPES,
     DOMAIN,
 )
+
+_LEGACY_UNIQUE_ID_PATTERN = re.compile(
+    r"^\s*-\s+unique_id:\s*fireangel_(event|battery|onbase)_([0-9a-f]{6})\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_LEGACY_EVENT_BLOCK_PATTERN = re.compile(
+    r"^\s*-\s+unique_id:\s*fireangel_event_([0-9a-f]{6})\s*$"
+    r"(?P<body>.*?)(?=^\s*-\s+unique_id:|\Z)",
+    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+)
+_LEGACY_NAME_PATTERN = re.compile(r"^\s*name:\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _legacy_detector_type(name: str) -> str:
+    """Infer a detector type from a legacy entity name."""
+    lowered = name.lower()
+    if "carbon monoxide" in lowered or re.search(r"\bco\b", lowered):
+        return DEVICE_TYPE_CO
+    if "heat" in lowered:
+        return DEVICE_TYPE_HEAT
+    if "smoke" in lowered:
+        return DEVICE_TYPE_SMOKE
+    return DEVICE_TYPE_AUTO
+
+
+def _parse_legacy_package(value: str) -> list[dict[str, str]]:
+    """Extract real detectors from the legacy package template entities."""
+    entity_kinds: dict[str, set[str]] = {}
+    for kind, raw_device_id in _LEGACY_UNIQUE_ID_PATTERN.findall(value):
+        device_id = raw_device_id.upper()
+        entity_kinds.setdefault(device_id, set()).add(kind.lower())
+
+    event_names: dict[str, str] = {}
+    for match in _LEGACY_EVENT_BLOCK_PATTERN.finditer(value):
+        name_match = _LEGACY_NAME_PATTERN.search(match.group("body"))
+        if name_match:
+            event_names[match.group(1).upper()] = name_match.group(1).strip(" '\"")
+
+    devices = []
+    for device_id, kinds in entity_kinds.items():
+        # The firmware pseudo-device only has an event entity. Actual alarms in
+        # the legacy package have event, battery, and base-status entities.
+        if kinds != {"event", "battery", "onbase"}:
+            continue
+        device = {CONF_DEVICE_ID: device_id}
+        device_type = _legacy_detector_type(event_names.get(device_id, ""))
+        if device_type != DEVICE_TYPE_AUTO:
+            device[CONF_DEVICE_TYPE] = device_type
+        devices.append(device)
+    return devices
 
 
 class FireAngelConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -71,7 +126,53 @@ class FireAngelOptionsFlow(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Show the options menu."""
-        return self.async_show_menu(step_id="init", menu_options=["add_device"])
+        return self.async_show_menu(
+            step_id="init", menu_options=["add_device", "import_legacy_yaml"]
+        )
+
+    async def async_step_import_legacy_yaml(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Import detector inventory from the legacy package YAML."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            imported = _parse_legacy_package(user_input[CONF_LEGACY_YAML])
+            if not imported:
+                errors[CONF_LEGACY_YAML] = "no_devices_found"
+            else:
+                devices = list(self.config_entry.options.get(CONF_DEVICES, []))
+                known = {item[CONF_DEVICE_ID] for item in devices}
+                new_devices = [
+                    device for device in imported if device[CONF_DEVICE_ID] not in known
+                ]
+                if not new_devices:
+                    errors[CONF_LEGACY_YAML] = "all_devices_configured"
+                else:
+                    devices.extend(new_devices)
+                    if self.config_entry.state is ConfigEntryState.LOADED:
+                        bridge = self.config_entry.runtime_data
+                        for device in new_devices:
+                            bridge.async_add_manual_device(
+                                device[CONF_DEVICE_ID],
+                                None,
+                                device.get(CONF_DEVICE_TYPE, DEVICE_TYPE_AUTO),
+                            )
+                    return self.async_create_entry(
+                        title="",
+                        data={**self.config_entry.options, CONF_DEVICES: devices},
+                    )
+
+        return self.async_show_form(
+            step_id="import_legacy_yaml",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_LEGACY_YAML): selector.TextSelector(
+                        selector.TextSelectorConfig(multiline=True)
+                    )
+                }
+            ),
+            errors=errors,
+        )
 
     async def async_step_add_device(
         self, user_input: dict[str, Any] | None = None

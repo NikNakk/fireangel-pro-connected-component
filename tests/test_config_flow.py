@@ -12,14 +12,44 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
+    CONF_LEGACY_YAML,
     CONF_MODEL,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
+    DEVICE_TYPE_SMOKE,
     DOMAIN,
 )
 
 PORT = "/dev/serial/by-id/fireangel"
+
+LEGACY_YAML = """
+template:
+  - trigger:
+      - trigger: state
+    sensor:
+      - unique_id: fireangel_event_a5b813
+        name: Built in Test Function
+      - unique_id: fireangel_event_b0be05
+        name: Hallway Fireangel smoke event
+      - unique_id: fireangel_battery_b0be05
+        name: Hallway Fireangel battery status
+      - unique_id: fireangel_onbase_b0be05
+        name: Hallway Fireangel base status
+      - unique_id: fireangel_event_92bf1a
+        name: Kitchen Fireangel heat event
+      - unique_id: fireangel_battery_92bf1a
+        name: Kitchen Fireangel battery status
+      - unique_id: fireangel_onbase_92bf1a
+        name: Kitchen Fireangel base status
+      - unique_id: fireangel_event_d72c06
+        name: Laundry Fireangel carbon monoxide event
+      - unique_id: fireangel_battery_d72c06
+        name: Laundry Fireangel battery status
+      - unique_id: fireangel_onbase_d72c06
+        name: Laundry Fireangel base status
+"""
 
 
 async def test_user_flow(hass: HomeAssistant) -> None:
@@ -156,3 +186,71 @@ async def test_options_validation_and_loaded_add(hass: HomeAssistant) -> None:
         CONF_MODEL: "7803",
     }
     bridge.async_add_manual_device.assert_called_once_with("C0FFEE", "7803", "auto")
+
+
+async def test_import_legacy_package(hass: HomeAssistant) -> None:
+    """Test bulk import, type inference, pseudo-device filtering, and live adds."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_PORT: PORT},
+        options={
+            CONF_DEVICES: [
+                {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE}
+            ]
+        },
+    )
+    entry.add_to_hass(hass)
+    bridge = Mock()
+    entry.runtime_data = bridge
+    entry.mock_state(hass, config_entries.ConfigEntryState.LOADED)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "import_legacy_yaml"}
+    )
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_LEGACY_YAML: LEGACY_YAML}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_DEVICES] == [
+        {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
+        {CONF_DEVICE_ID: "92BF1A", CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT},
+        {CONF_DEVICE_ID: "D72C06", CONF_DEVICE_TYPE: DEVICE_TYPE_CO},
+    ]
+    assert bridge.async_add_manual_device.call_args_list == [
+        (("92BF1A", None, DEVICE_TYPE_HEAT),),
+        (("D72C06", None, DEVICE_TYPE_CO),),
+    ]
+
+
+async def test_import_legacy_package_errors(hass: HomeAssistant) -> None:
+    """Test missing and already-imported detector errors."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_PORT: PORT},
+        options={
+            CONF_DEVICES: [
+                {CONF_DEVICE_ID: "B0BE05"},
+                {CONF_DEVICE_ID: "92BF1A"},
+                {CONF_DEVICE_ID: "D72C06"},
+            ]
+        },
+    )
+    entry.add_to_hass(hass)
+
+    for package, error in (
+        ("template: []", "no_devices_found"),
+        (LEGACY_YAML, "all_devices_configured"),
+    ):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "import_legacy_yaml"}
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_LEGACY_YAML: package}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {CONF_LEGACY_YAML: error}

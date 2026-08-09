@@ -51,8 +51,16 @@ assign an area from its Home Assistant device page.
 
 ## Migrating an existing YAML setup
 
-You do not need to wait for every alarm to transmit. For each detector in the
-old package:
+You do not need to wait for every alarm to transmit. To import the old package
+in one operation:
+
+1. Open **Settings → Devices & services → FireAngel Pro Connected → Configure**.
+2. Choose **Import legacy package YAML** and paste the complete package contents.
+   Detectors with event, battery, and base-status entities are imported. The
+   firmware's event-only pseudo-device is ignored, and detector types are
+   inferred from legacy names containing smoke, heat, or carbon monoxide.
+
+To add an individual detector instead:
 
 1. Open **Settings → Devices & services → FireAngel Pro Connected → Configure**.
 2. Choose **Add a detector by hex ID**.

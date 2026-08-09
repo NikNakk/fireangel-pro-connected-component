@@ -8,6 +8,7 @@ CONF_BAUD_RATE: Final = "baud_rate"
 CONF_DEVICE_ID: Final = "device_id"
 CONF_DEVICES: Final = "devices"
 CONF_DEVICE_TYPE: Final = "device_type"
+CONF_LEGACY_YAML: Final = "legacy_yaml"
 CONF_MODEL: Final = "model"
 CONF_PORT: Final = "port"
 
