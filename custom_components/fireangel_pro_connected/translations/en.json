@@ -41,7 +41,7 @@
       },
       "import_legacy_yaml": {
         "title": "Import legacy package YAML",
-        "description": "Paste the contents of the old FireAngel package. Detectors with matching event, battery, and base-status entities will be added. Firmware pseudo-devices and detectors already configured are ignored.",
+        "description": "Paste the contents of the old FireAngel package. Detectors with matching event, battery, and base-status entities and the bridge's event-only WiSafe2 device will be added. Devices already configured are ignored.",
         "data": {
           "legacy_yaml": "Legacy package YAML"
         }

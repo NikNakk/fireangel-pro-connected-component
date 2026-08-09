@@ -18,13 +18,17 @@ from homeassistant.util import dt as dt_util
 from serial import SerialException
 
 from .const import (
+    CONF_BASE,
+    CONF_BATTERY,
     CONF_BAUD_RATE,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
+    CONF_EVENT,
     CONF_MODEL,
     CONF_NAME,
     CONF_PORT,
+    CONF_RESULT,
     DEFAULT_BAUD_RATE,
 )
 
@@ -80,6 +84,10 @@ class FireAngelBridge:
                     model=model,
                     device_type=device.get(CONF_DEVICE_TYPE),
                     name=device.get(CONF_NAME),
+                    event=device.get(CONF_EVENT),
+                    result=device.get(CONF_RESULT),
+                    base=device.get(CONF_BASE),
+                    battery=device.get(CONF_BATTERY),
                 )
 
     @staticmethod
@@ -208,8 +216,12 @@ class FireAngelBridge:
                 setattr(state, key, str(fields[key]).upper())
         state.last_seen = now
 
+        # Persist the complete latest detector status, not just its inventory,
+        # so entities resume with their last Arduino-reported values after a
+        # Home Assistant restart. Partial messages have already been merged
+        # into the existing state above.
+        self._persist_devices()
         if is_new:
-            self._persist_devices()
             for listener in tuple(self._new_device_callbacks):
                 listener(device_id)
         self._notify_update()
@@ -258,13 +270,23 @@ class FireAngelBridge:
 
     @callback
     def _persist_devices(self) -> None:
-        """Persist discovered IDs so their devices exist after a restart."""
+        """Persist detector inventory and its latest reported status."""
         options = dict(self.entry.options)
         options[CONF_DEVICES] = [
             {
                 key: value
                 for key, value in asdict(device).items()
-                if key in (CONF_DEVICE_ID, CONF_MODEL, CONF_DEVICE_TYPE, CONF_NAME)
+                if key
+                in (
+                    CONF_DEVICE_ID,
+                    CONF_MODEL,
+                    CONF_DEVICE_TYPE,
+                    CONF_NAME,
+                    CONF_EVENT,
+                    CONF_RESULT,
+                    CONF_BASE,
+                    CONF_BATTERY,
+                )
                 and value is not None
             }
             for device in self.devices.values()

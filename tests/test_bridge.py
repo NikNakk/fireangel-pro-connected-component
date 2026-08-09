@@ -51,7 +51,14 @@ def test_parse_message_and_discover_device(hass: HomeAssistant) -> None:
     assert detector.last_seen is not None
     assert discovered == ["A1B2C3"]
     assert bridge.entry.options[CONF_DEVICES] == [
-        {CONF_DEVICE_ID: "A1B2C3", "model": "1103"}
+        {
+            CONF_DEVICE_ID: "A1B2C3",
+            "model": "1103",
+            "event": "FIRE TEST",
+            "result": "PASS",
+            "base": "ON",
+            "battery": "OK",
+        }
     ]
 
 
@@ -118,6 +125,10 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
                     CONF_MODEL: "11:03",
                     CONF_NAME: "Kitchen Fireangel",
                     CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
+                    "event": "FIRE EMERGENCY",
+                    "result": "PASS",
+                    "base": "OFF",
+                    "battery": "LOW",
                 },
                 {CONF_DEVICE_ID: "invalid"},
             ]
@@ -125,6 +136,10 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
     )
     assert bridge.devices["A1B2C3"].model == "1103"
     assert bridge.devices["A1B2C3"].name == "Kitchen Fireangel"
+    assert bridge.devices["A1B2C3"].event == "FIRE EMERGENCY"
+    assert bridge.devices["A1B2C3"].result == "PASS"
+    assert bridge.devices["A1B2C3"].base == "OFF"
+    assert bridge.devices["A1B2C3"].battery == "LOW"
     assert FireAngelBridge.normalize_model(None) is None
     assert FireAngelBridge.normalize_model("bad") is None
     updates, devices = Mock(), Mock()

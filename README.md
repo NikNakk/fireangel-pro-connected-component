@@ -70,7 +70,7 @@ in one operation:
 1. Open **Settings → Devices & services → FireAngel Pro Connected → Configure**.
 2. Choose **Import legacy package YAML** and paste the complete package contents.
    Detectors with event, battery, and base-status entities are imported. The
-   firmware's event-only pseudo-device is ignored, and detector types are
+   firmware's event-only WiSafe2 device is included, and detector types are
    inferred from legacy names containing smoke, heat, or carbon monoxide. The
    legacy entity names are also used as the detectors' initial device names;
    names you later customize in Home Assistant are not overwritten.
