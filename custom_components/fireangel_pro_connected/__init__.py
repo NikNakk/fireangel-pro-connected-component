@@ -16,6 +16,7 @@ type FireAngelConfigEntry = ConfigEntry[FireAngelBridge]
 async def async_setup_entry(hass: HomeAssistant, entry: FireAngelConfigEntry) -> bool:
     """Set up FireAngel Pro Connected from a config entry."""
     bridge = FireAngelBridge(hass, entry)
+    await bridge.async_load_persisted_state()
     await bridge.async_start()
     entry.runtime_data = bridge
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

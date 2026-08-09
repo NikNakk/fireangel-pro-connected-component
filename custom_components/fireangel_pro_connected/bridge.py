@@ -14,21 +14,18 @@ from typing import Any
 import serial_asyncio_fast
 from homeassistant.config_entries import ConfigEntryNotReady
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from serial import SerialException
 
 from .const import (
-    CONF_BASE,
-    CONF_BATTERY,
     CONF_BAUD_RATE,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
-    CONF_EVENT,
     CONF_MODEL,
     CONF_NAME,
     CONF_PORT,
-    CONF_RESULT,
     DEFAULT_BAUD_RATE,
 )
 
@@ -36,6 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 _DEVICE_ID_PATTERN = re.compile(r"^[0-9A-F]{6}$")
 _MODEL_PATTERN = re.compile(r"^[0-9A-F]{4}$")
 _RECONNECT_DELAY = 10
+_STORAGE_VERSION = 1
 
 type UpdateCallback = Callable[[], None]
 type NewDeviceCallback = Callable[[str], None]
@@ -74,6 +72,9 @@ class FireAngelBridge:
         self._task: asyncio.Task[None] | None = None
         self._update_callbacks: set[UpdateCallback] = set()
         self._new_device_callbacks: set[NewDeviceCallback] = set()
+        self._store: Store[dict[str, dict[str, str]]] = Store(
+            hass, _STORAGE_VERSION, f"fireangel_pro_connected.{entry.entry_id}"
+        )
 
         for device in entry.options.get(CONF_DEVICES, []):
             device_id = self.normalize_device_id(device.get(CONF_DEVICE_ID, ""))
@@ -84,11 +85,19 @@ class FireAngelBridge:
                     model=model,
                     device_type=device.get(CONF_DEVICE_TYPE),
                     name=device.get(CONF_NAME),
-                    event=device.get(CONF_EVENT),
-                    result=device.get(CONF_RESULT),
-                    base=device.get(CONF_BASE),
-                    battery=device.get(CONF_BATTERY),
                 )
+
+    async def async_load_persisted_state(self) -> None:
+        """Restore detector status without putting runtime data in entry options."""
+        stored = await self._store.async_load()
+        if not stored:
+            return
+        for device_id, values in stored.items():
+            if (state := self.devices.get(device_id)) is None:
+                continue
+            for key in ("event", "result", "base", "battery"):
+                if key in values:
+                    setattr(state, key, values[key])
 
     @staticmethod
     def normalize_device_id(value: str) -> str | None:
@@ -216,12 +225,9 @@ class FireAngelBridge:
                 setattr(state, key, str(fields[key]).upper())
         state.last_seen = now
 
-        # Persist the complete latest detector status, not just its inventory,
-        # so entities resume with their last Arduino-reported values after a
-        # Home Assistant restart. Partial messages have already been merged
-        # into the existing state above.
-        self._persist_devices()
+        self._store.async_delay_save(self._stored_status)
         if is_new:
+            self._persist_devices()
             for listener in tuple(self._new_device_callbacks):
                 listener(device_id)
         self._notify_update()
@@ -270,25 +276,27 @@ class FireAngelBridge:
 
     @callback
     def _persist_devices(self) -> None:
-        """Persist detector inventory and its latest reported status."""
+        """Persist detector inventory in config-entry options."""
         options = dict(self.entry.options)
         options[CONF_DEVICES] = [
             {
                 key: value
                 for key, value in asdict(device).items()
-                if key
-                in (
-                    CONF_DEVICE_ID,
-                    CONF_MODEL,
-                    CONF_DEVICE_TYPE,
-                    CONF_NAME,
-                    CONF_EVENT,
-                    CONF_RESULT,
-                    CONF_BASE,
-                    CONF_BATTERY,
-                )
+                if key in (CONF_DEVICE_ID, CONF_MODEL, CONF_DEVICE_TYPE, CONF_NAME)
                 and value is not None
             }
             for device in self.devices.values()
         ]
         self.hass.config_entries.async_update_entry(self.entry, options=options)
+
+    @callback
+    def _stored_status(self) -> dict[str, dict[str, str]]:
+        """Return the restorable runtime status for storage."""
+        return {
+            device_id: {
+                key: value
+                for key in ("event", "result", "base", "battery")
+                if (value := getattr(device, key)) is not None
+            }
+            for device_id, device in self.devices.items()
+        }

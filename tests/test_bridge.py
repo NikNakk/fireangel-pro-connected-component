@@ -51,14 +51,7 @@ def test_parse_message_and_discover_device(hass: HomeAssistant) -> None:
     assert detector.last_seen is not None
     assert discovered == ["A1B2C3"]
     assert bridge.entry.options[CONF_DEVICES] == [
-        {
-            CONF_DEVICE_ID: "A1B2C3",
-            "model": "1103",
-            "event": "FIRE TEST",
-            "result": "PASS",
-            "base": "ON",
-            "battery": "OK",
-        }
+        {CONF_DEVICE_ID: "A1B2C3", "model": "1103"}
     ]
 
 
@@ -115,7 +108,9 @@ def test_normalize_hex_identifiers() -> None:
     assert FireAngelBridge.normalize_model("11:03") == "1103"
 
 
-def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None:
+async def test_restore_manual_listeners_and_ignored_lines(
+    hass: HomeAssistant,
+) -> None:
     bridge = make_bridge(
         hass,
         options={
@@ -125,10 +120,6 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
                     CONF_MODEL: "11:03",
                     CONF_NAME: "Kitchen Fireangel",
                     CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
-                    "event": "FIRE EMERGENCY",
-                    "result": "PASS",
-                    "base": "OFF",
-                    "battery": "LOW",
                 },
                 {CONF_DEVICE_ID: "invalid"},
             ]
@@ -136,10 +127,6 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
     )
     assert bridge.devices["A1B2C3"].model == "1103"
     assert bridge.devices["A1B2C3"].name == "Kitchen Fireangel"
-    assert bridge.devices["A1B2C3"].event == "FIRE EMERGENCY"
-    assert bridge.devices["A1B2C3"].result == "PASS"
-    assert bridge.devices["A1B2C3"].base == "OFF"
-    assert bridge.devices["A1B2C3"].battery == "LOW"
     assert FireAngelBridge.normalize_model(None) is None
     assert FireAngelBridge.normalize_model("bad") is None
     updates, devices = Mock(), Mock()
@@ -158,6 +145,28 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
     bridge.async_process_line("  ")
     bridge.async_process_line("[]")
     bridge.async_process_line('{"device":"bad"}')
+
+
+async def test_persist_and_restore_status_outside_entry_options(
+    hass: HomeAssistant,
+) -> None:
+    """Test runtime status uses integration storage rather than user options."""
+    bridge = make_bridge(hass, options={CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]})
+    bridge.async_process_line(
+        '{"device":"A1B2C3", "event":"FIRE TEST", "result":"PASS", '
+        '"base":"ON", "battery":"LOW"}'
+    )
+    await asyncio.sleep(0)
+    await hass.async_block_till_done()
+
+    assert bridge.entry.options == {CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]}
+    restored = FireAngelBridge(hass, bridge.entry)
+    await restored.async_load_persisted_state()
+    detector = restored.devices["A1B2C3"]
+    assert detector.event == "FIRE TEST"
+    assert detector.result == "PASS"
+    assert detector.base == "ON"
+    assert detector.battery == "LOW"
 
 
 async def test_serial_lifecycle(hass: HomeAssistant) -> None:

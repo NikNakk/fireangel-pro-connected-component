@@ -11,7 +11,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Persisted each detector's latest event, test result, battery condition, and
   base condition so entity status survives Home Assistant restarts until the
-  Arduino reports a change.
+  Arduino reports a change. Runtime status is kept in integration storage,
+  separate from user-owned config-entry options.
 - Included the bridge's event-only WiSafe2 device in bulk legacy YAML imports
   instead of waiting for it to be rediscovered after setup.
 
