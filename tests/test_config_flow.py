@@ -17,6 +17,7 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
+    DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
     DEVICE_TYPE_HEAT,
     DEVICE_TYPE_SMOKE,
@@ -30,25 +31,25 @@ template:
   - trigger:
       - trigger: state
     sensor:
-      - unique_id: fireangel_event_a5b813
+      - unique_id: fireangel_event_abc123
         name: Built in Test Function
-      - unique_id: fireangel_event_b0be05
+      - unique_id: fireangel_event_bcd234
         name: Hallway Fireangel smoke event
-      - unique_id: fireangel_battery_b0be05
+      - unique_id: fireangel_battery_bcd234
         name: Hallway Fireangel battery status
-      - unique_id: fireangel_onbase_b0be05
+      - unique_id: fireangel_onbase_bcd234
         name: Hallway Fireangel base status
-      - unique_id: fireangel_event_92bf1a
+      - unique_id: fireangel_event_cde345
         name: Kitchen Fireangel heat event
-      - unique_id: fireangel_battery_92bf1a
+      - unique_id: fireangel_battery_cde345
         name: Kitchen Fireangel battery status
-      - unique_id: fireangel_onbase_92bf1a
+      - unique_id: fireangel_onbase_cde345
         name: Kitchen Fireangel base status
-      - unique_id: fireangel_event_d72c06
+      - unique_id: fireangel_event_def456
         name: Laundry Fireangel carbon monoxide event
-      - unique_id: fireangel_battery_d72c06
+      - unique_id: fireangel_battery_def456
         name: Laundry Fireangel battery status
-      - unique_id: fireangel_onbase_d72c06
+      - unique_id: fireangel_onbase_def456
         name: Laundry Fireangel base status
 """
 
@@ -196,7 +197,7 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
         data={CONF_PORT: PORT},
         options={
             CONF_DEVICES: [
-                {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE}
+                {CONF_DEVICE_ID: "BCD234", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE}
             ]
         },
     )
@@ -217,23 +218,27 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICES] == [
-        {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
-        {CONF_DEVICE_ID: "A5B813", CONF_NAME: "Built in Test Function"},
+        {CONF_DEVICE_ID: "BCD234", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
         {
-            CONF_DEVICE_ID: "92BF1A",
+            CONF_DEVICE_ID: "ABC123",
+            CONF_DEVICE_TYPE: DEVICE_TYPE_BRIDGE,
+            CONF_NAME: "Built in Test Function",
+        },
+        {
+            CONF_DEVICE_ID: "CDE345",
             CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
             CONF_NAME: "Kitchen Fireangel",
         },
         {
-            CONF_DEVICE_ID: "D72C06",
+            CONF_DEVICE_ID: "DEF456",
             CONF_DEVICE_TYPE: DEVICE_TYPE_CO,
             CONF_NAME: "Laundry Fireangel",
         },
     ]
     assert bridge.async_add_manual_device.call_args_list == [
-        (("A5B813", None, "auto", "Built in Test Function"),),
-        (("92BF1A", None, DEVICE_TYPE_HEAT, "Kitchen Fireangel"),),
-        (("D72C06", None, DEVICE_TYPE_CO, "Laundry Fireangel"),),
+        (("ABC123", None, DEVICE_TYPE_BRIDGE, "Built in Test Function"),),
+        (("CDE345", None, DEVICE_TYPE_HEAT, "Kitchen Fireangel"),),
+        (("DEF456", None, DEVICE_TYPE_CO, "Laundry Fireangel"),),
     ]
 
 
@@ -270,10 +275,10 @@ async def test_import_legacy_package_errors(hass: HomeAssistant) -> None:
         data={CONF_PORT: PORT},
         options={
             CONF_DEVICES: [
-                {CONF_DEVICE_ID: "B0BE05"},
-                {CONF_DEVICE_ID: "92BF1A"},
-                {CONF_DEVICE_ID: "D72C06"},
-                {CONF_DEVICE_ID: "A5B813"},
+                {CONF_DEVICE_ID: "BCD234"},
+                {CONF_DEVICE_ID: "CDE345"},
+                {CONF_DEVICE_ID: "DEF456"},
+                {CONF_DEVICE_ID: "ABC123"},
             ]
         },
     )
