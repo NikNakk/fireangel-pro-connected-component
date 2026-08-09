@@ -10,6 +10,7 @@ CONF_DEVICES: Final = "devices"
 CONF_DEVICE_TYPE: Final = "device_type"
 CONF_LEGACY_YAML: Final = "legacy_yaml"
 CONF_MODEL: Final = "model"
+CONF_NAME: Final = "name"
 CONF_PORT: Final = "port"
 
 DEFAULT_BAUD_RATE: Final = 115200

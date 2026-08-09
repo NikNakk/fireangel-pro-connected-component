@@ -23,6 +23,7 @@ from .const import (
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
 )
@@ -43,6 +44,7 @@ class DetectorState:
     device_id: str
     model: str | None = None
     device_type: str | None = None
+    name: str | None = None
     event: str | None = None
     result: str | None = None
     base: str | None = None
@@ -77,6 +79,7 @@ class FireAngelBridge:
                     device_id,
                     model=model,
                     device_type=device.get(CONF_DEVICE_TYPE),
+                    name=device.get(CONF_NAME),
                 )
 
     @staticmethod
@@ -208,6 +211,7 @@ class FireAngelBridge:
         device_id: str,
         model: str | None = None,
         device_type: str | None = None,
+        name: str | None = None,
     ) -> None:
         """Add a detector entered in the options flow."""
         normalized_id = self.normalize_device_id(device_id)
@@ -217,6 +221,7 @@ class FireAngelBridge:
             normalized_id,
             model=self.normalize_model(model),
             device_type=device_type,
+            name=name,
         )
         for listener in tuple(self._new_device_callbacks):
             listener(normalized_id)
@@ -250,7 +255,7 @@ class FireAngelBridge:
             {
                 key: value
                 for key, value in asdict(device).items()
-                if key in (CONF_DEVICE_ID, CONF_MODEL, CONF_DEVICE_TYPE)
+                if key in (CONF_DEVICE_ID, CONF_MODEL, CONF_DEVICE_TYPE, CONF_NAME)
                 and value is not None
             }
             for device in self.devices.values()

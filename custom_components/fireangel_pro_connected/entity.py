@@ -69,7 +69,7 @@ class FireAngelDetectorEntity(Entity):
             identifiers={(DOMAIN, self.device_id)},
             manufacturer="FireAngel",
             model=MODEL_NAMES.get(model_code, model_code),
-            name=f"FireAngel {self.device_id}",
+            name=self.detector.name or f"FireAngel {self.device_id}",
             serial_number=self.device_id,
             via_device=(DOMAIN, self.bridge.entry.entry_id),
         )

@@ -74,6 +74,9 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     assert event.native_value == "FIRE EMERGENCY"
     assert event.extra_state_attributes["result"] == "PASS"
     assert event.device_info["model"] == "WST-630"
+    assert event.device_info["name"] == "FireAngel A1B2C3"
+    state.name = "Kitchen Fireangel"
+    assert event.device_info["name"] == "Kitchen Fireangel"
     state.event, state.battery, state.base = "CLEAR", "OK", "ON"
     assert not alarm.is_on and not battery.is_on and not base.is_on
     state.device_type = DEVICE_TYPE_HEAT

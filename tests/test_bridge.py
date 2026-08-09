@@ -15,6 +15,7 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_DEVICE_TYPE,
     CONF_DEVICES,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PORT,
     DEVICE_TYPE_HEAT,
     DOMAIN,
@@ -100,6 +101,7 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
                 {
                     CONF_DEVICE_ID: "a1-b2-c3",
                     CONF_MODEL: "11:03",
+                    CONF_NAME: "Kitchen Fireangel",
                     CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
                 },
                 {CONF_DEVICE_ID: "invalid"},
@@ -107,6 +109,7 @@ def test_restore_manual_listeners_and_ignored_lines(hass: HomeAssistant) -> None
         },
     )
     assert bridge.devices["A1B2C3"].model == "1103"
+    assert bridge.devices["A1B2C3"].name == "Kitchen Fireangel"
     assert FireAngelBridge.normalize_model(None) is None
     assert FireAngelBridge.normalize_model("bad") is None
     updates, devices = Mock(), Mock()

@@ -14,6 +14,7 @@ from custom_components.fireangel_pro_connected.const import (
     CONF_DEVICES,
     CONF_LEGACY_YAML,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
     DEVICE_TYPE_CO,
@@ -217,12 +218,20 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICES] == [
         {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
-        {CONF_DEVICE_ID: "92BF1A", CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT},
-        {CONF_DEVICE_ID: "D72C06", CONF_DEVICE_TYPE: DEVICE_TYPE_CO},
+        {
+            CONF_DEVICE_ID: "92BF1A",
+            CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
+            CONF_NAME: "Kitchen Fireangel",
+        },
+        {
+            CONF_DEVICE_ID: "D72C06",
+            CONF_DEVICE_TYPE: DEVICE_TYPE_CO,
+            CONF_NAME: "Laundry Fireangel",
+        },
     ]
     assert bridge.async_add_manual_device.call_args_list == [
-        (("92BF1A", None, DEVICE_TYPE_HEAT),),
-        (("D72C06", None, DEVICE_TYPE_CO),),
+        (("92BF1A", None, DEVICE_TYPE_HEAT, "Kitchen Fireangel"),),
+        (("D72C06", None, DEVICE_TYPE_CO, "Laundry Fireangel"),),
     ]
 
 

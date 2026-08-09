@@ -18,6 +18,7 @@ from .const import (
     CONF_DEVICES,
     CONF_LEGACY_YAML,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PORT,
     DEFAULT_BAUD_RATE,
     DEVICE_TYPE_AUTO,
@@ -52,6 +53,17 @@ def _legacy_detector_type(name: str) -> str:
     return DEVICE_TYPE_AUTO
 
 
+def _legacy_detector_name(name: str) -> str | None:
+    """Derive a detector device name from a legacy event entity name."""
+    cleaned = re.sub(
+        r"\s+(?:(?:carbon monoxide|co|smoke|heat)\s+)?event\s*$",
+        "",
+        name,
+        flags=re.IGNORECASE,
+    ).strip()
+    return cleaned or None
+
+
 def _parse_legacy_package(value: str) -> list[dict[str, str]]:
     """Extract real detectors from the legacy package template entities."""
     entity_kinds: dict[str, set[str]] = {}
@@ -72,9 +84,12 @@ def _parse_legacy_package(value: str) -> list[dict[str, str]]:
         if kinds != {"event", "battery", "onbase"}:
             continue
         device = {CONF_DEVICE_ID: device_id}
-        device_type = _legacy_detector_type(event_names.get(device_id, ""))
+        legacy_name = event_names.get(device_id, "")
+        device_type = _legacy_detector_type(legacy_name)
         if device_type != DEVICE_TYPE_AUTO:
             device[CONF_DEVICE_TYPE] = device_type
+        if device_name := _legacy_detector_name(legacy_name):
+            device[CONF_NAME] = device_name
         devices.append(device)
     return devices
 
@@ -156,6 +171,7 @@ class FireAngelOptionsFlow(config_entries.OptionsFlow):
                                 device[CONF_DEVICE_ID],
                                 None,
                                 device.get(CONF_DEVICE_TYPE, DEVICE_TYPE_AUTO),
+                                device.get(CONF_NAME),
                             )
                     return self.async_create_entry(
                         title="",
