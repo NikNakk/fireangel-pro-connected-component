@@ -190,7 +190,7 @@ async def test_options_validation_and_loaded_add(hass: HomeAssistant) -> None:
 
 
 async def test_import_legacy_package(hass: HomeAssistant) -> None:
-    """Test bulk import, type inference, pseudo-device filtering, and live adds."""
+    """Test bulk import, type inference, WiSafe2 inclusion, and live adds."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_PORT: PORT},
@@ -218,6 +218,7 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICES] == [
         {CONF_DEVICE_ID: "B0BE05", CONF_DEVICE_TYPE: DEVICE_TYPE_SMOKE},
+        {CONF_DEVICE_ID: "A5B813", CONF_NAME: "Built in Test Function"},
         {
             CONF_DEVICE_ID: "92BF1A",
             CONF_DEVICE_TYPE: DEVICE_TYPE_HEAT,
@@ -230,6 +231,7 @@ async def test_import_legacy_package(hass: HomeAssistant) -> None:
         },
     ]
     assert bridge.async_add_manual_device.call_args_list == [
+        (("A5B813", None, "auto", "Built in Test Function"),),
         (("92BF1A", None, DEVICE_TYPE_HEAT, "Kitchen Fireangel"),),
         (("D72C06", None, DEVICE_TYPE_CO, "Laundry Fireangel"),),
     ]
@@ -271,6 +273,7 @@ async def test_import_legacy_package_errors(hass: HomeAssistant) -> None:
                 {CONF_DEVICE_ID: "B0BE05"},
                 {CONF_DEVICE_ID: "92BF1A"},
                 {CONF_DEVICE_ID: "D72C06"},
+                {CONF_DEVICE_ID: "A5B813"},
             ]
         },
     )

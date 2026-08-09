@@ -65,7 +65,7 @@ def _legacy_detector_name(name: str) -> str | None:
 
 
 def _parse_legacy_package(value: str) -> list[dict[str, str]]:
-    """Extract real detectors from the legacy package template entities."""
+    """Extract detectors and the WiSafe2 device from legacy template entities."""
     entity_kinds: dict[str, set[str]] = {}
     for kind, raw_device_id in _LEGACY_UNIQUE_ID_PATTERN.findall(value):
         device_id = raw_device_id.upper()
@@ -79,9 +79,10 @@ def _parse_legacy_package(value: str) -> list[dict[str, str]]:
 
     devices = []
     for device_id, kinds in entity_kinds.items():
-        # The firmware pseudo-device only has an event entity. Actual alarms in
-        # the legacy package have event, battery, and base-status entities.
-        if kinds != {"event", "battery", "onbase"}:
+        # Alarm devices have all three entities, while the bridge's WiSafe2
+        # protocol device has only an event entity. Import both so migration
+        # creates every device that the Arduino will subsequently report.
+        if kinds not in ({"event"}, {"event", "battery", "onbase"}):
             continue
         device = {CONF_DEVICE_ID: device_id}
         legacy_name = event_names.get(device_id, "")
