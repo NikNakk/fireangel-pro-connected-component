@@ -47,21 +47,6 @@ def _async_remove_orphaned_bridge_module_device(
     if bridge_device is None:
         return
 
-    device_registry.async_update_device(
-        bridge_device.id,
-        name_by_user=(
-            bridge_device.name_by_user
-            if bridge_device.name_by_user is not None
-            else module_device.name_by_user
-        ),
-        area_id=(
-            bridge_device.area_id
-            if bridge_device.area_id is not None
-            else module_device.area_id
-        ),
-        labels=bridge_device.labels | module_device.labels,
-    )
-
     device_registry.async_remove_device(module_device.id)
 
 

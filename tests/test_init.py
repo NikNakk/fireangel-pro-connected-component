@@ -37,9 +37,6 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, DEFAULT_BRIDGE_DEVICE_ID)},
     )
-    device_registry.async_update_device(
-        old_module_device.id, name_by_user="Custom bridge module"
-    )
     for platform, unique_id in (
         ("binary_sensor", "fireangel_alarm_a5b813"),
         ("sensor", "fireangel_event_a5b813"),
@@ -70,7 +67,6 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
             identifiers={(DOMAIN, entry.entry_id)}
         )
         assert bridge_device is not None
-        assert bridge_device.name_by_user == "Custom bridge module"
         assert (
             device_registry.async_get_device(
                 identifiers={(DOMAIN, DEFAULT_BRIDGE_DEVICE_ID)}
