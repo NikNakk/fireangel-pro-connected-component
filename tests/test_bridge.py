@@ -1,6 +1,7 @@
 """Tests for the WiSafe2 serial bridge protocol."""
 
 import asyncio
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -49,10 +50,48 @@ def test_parse_message_and_discover_device(hass: HomeAssistant) -> None:
     assert detector.base == "ON"
     assert detector.battery == "OK"
     assert detector.last_seen is not None
+    assert detector.last_test_pass == detector.last_seen
     assert discovered == ["A1B2C3"]
     assert bridge.entry.options[CONF_DEVICES] == [
         {CONF_DEVICE_ID: "A1B2C3", "model": "1103"}
     ]
+
+
+def test_last_test_pass_updates_only_for_successful_tests(
+    hass: HomeAssistant,
+) -> None:
+    """Test successful test recognition without changes from other messages."""
+    bridge = make_bridge(hass)
+    first = datetime(2026, 8, 10, 10, 0, tzinfo=UTC)
+    later = datetime(2026, 8, 10, 11, 0, tzinfo=UTC)
+
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.dt_util.utcnow",
+        side_effect=[first, first, first, first, later],
+    ):
+        bridge.async_process_line(
+            '{"device":"A1B2C3", "event":"FIRE TEST", "result":"FAIL"}'
+        )
+        assert bridge.devices["A1B2C3"].last_test_pass is None
+
+        bridge.async_process_line(
+            '{"device":"A1B2C3", "event":"FIRE EMERGENCY", "result":"PASS"}'
+        )
+        assert bridge.devices["A1B2C3"].last_test_pass is None
+
+        bridge.async_process_line(
+            '{"device":"A1B2C3", "event":"FIRE TEST", "result":"PASS"}'
+        )
+        assert bridge.devices["A1B2C3"].last_test_pass == first
+
+        bridge.async_process_line('{"device":"A1B2C3", "battery":"LOW", "base":"OFF"}')
+        assert bridge.devices["A1B2C3"].last_test_pass == first
+
+        bridge.async_process_line(
+            '{"device":"A1B2C3", "event":"TEST", "result":"PASS"}'
+        )
+
+    assert bridge.devices["A1B2C3"].last_test_pass == later
 
 
 def test_merge_partial_messages_without_rediscovery(hass: HomeAssistant) -> None:
@@ -167,6 +206,25 @@ async def test_persist_and_restore_status_outside_entry_options(
     assert detector.result == "PASS"
     assert detector.base == "ON"
     assert detector.battery == "LOW"
+    assert detector.last_test_pass is not None
+    assert detector.last_test_pass.tzinfo is not None
+
+
+async def test_restore_old_persisted_status_without_last_test_pass(
+    hass: HomeAssistant,
+) -> None:
+    """Test storage created before last-test tracking remains compatible."""
+    bridge = make_bridge(hass, options={CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]})
+    bridge._store.async_load = AsyncMock(
+        return_value={"A1B2C3": {"event": "CLEAR", "battery": "OK"}}
+    )
+
+    await bridge.async_load_persisted_state()
+
+    detector = bridge.devices["A1B2C3"]
+    assert detector.event == "CLEAR"
+    assert detector.battery == "OK"
+    assert detector.last_test_pass is None
 
 
 async def test_serial_lifecycle(hass: HomeAssistant) -> None:
