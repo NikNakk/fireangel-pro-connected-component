@@ -89,7 +89,8 @@
     "sensor": {
       "bridge_message": {"name": "Last message"},
       "last_event": {"name": "Last event"},
-      "model_code": {"name": "Model code"}
+      "model_code": {"name": "Model code"},
+      "last_successful_test": {"name": "Last successful test"}
     }
   }
 }

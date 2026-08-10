@@ -58,6 +58,7 @@ class DetectorState:
     result: str | None = None
     base: str | None = None
     battery: str | None = None
+    last_test_pass: datetime | None = None
     last_seen: datetime | None = None
     bridge_device: bool = False
 
@@ -129,6 +130,10 @@ class FireAngelBridge:
             for key in ("event", "result", "base", "battery"):
                 if key in values:
                     setattr(state, key, values[key])
+            if (value := values.get("last_test_pass")) is not None:
+                timestamp = dt_util.parse_datetime(value)
+                if timestamp is not None and timestamp.tzinfo is not None:
+                    state.last_test_pass = timestamp
 
     @staticmethod
     def normalize_device_id(value: str) -> str | None:
@@ -259,6 +264,10 @@ class FireAngelBridge:
         for key in ("event", "result", "base", "battery"):
             if key in fields:
                 setattr(state, key, str(fields[key]).upper())
+        event = str(fields.get("event", "")).strip().upper()
+        result = str(fields.get("result", "")).strip().upper()
+        if result == "PASS" and (event == "TEST" or event.endswith(" TEST")):
+            state.last_test_pass = now
         state.last_seen = now
 
         self._store.async_delay_save(self._stored_status)
@@ -336,5 +345,10 @@ class FireAngelBridge:
                 for key in ("event", "result", "base", "battery")
                 if (value := getattr(device, key)) is not None
             }
+            | (
+                {"last_test_pass": device.last_test_pass.isoformat()}
+                if device.last_test_pass is not None
+                else {}
+            )
             for device_id, device in self.devices.items()
         }

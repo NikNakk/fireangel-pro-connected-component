@@ -7,6 +7,21 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.10] - 2026-08-10
+
+### Fixed
+
+- Reconciled the divergent beta.8 and beta.9 release histories so beta.8's
+  detector classification and bridge-device behavior remain available alongside
+  the last-successful-test timestamp introduced in beta.9.
+
+## [0.1.0-beta.9] - 2026-08-10
+
+### Added
+
+- Added a **Last successful test** timestamp sensor for every detector, updated
+  only by passing test events and persisted across Home Assistant restarts.
+
 ## [0.1.0-beta.8] - 2026-08-09
 
 ### Added
@@ -128,7 +143,9 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.8...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...HEAD
+[0.1.0-beta.10]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.9...v0.1.0-beta.10
+[0.1.0-beta.9]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.8...v0.1.0-beta.9
 [0.1.0-beta.8]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.7...v0.1.0-beta.8
 [0.1.0-beta.7]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.6...v0.1.0-beta.7
 [0.1.0-beta.6]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.5...v0.1.0-beta.6
