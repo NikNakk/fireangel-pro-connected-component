@@ -7,6 +7,11 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Simplified diagnostics output now that the integration stores no credentials
+  or tokens requiring redaction.
+
 ## [0.1.0-beta.11] - 2026-08-10
 
 ### Fixed

@@ -99,9 +99,14 @@ activation.
 
 ## Development and verification
 
-The supported environment is `.devcontainer`, currently using Python 3.13.
+The supported environment is `.devcontainer`, currently using Python 3.14.
 The host Python may be older, so run validation inside the container when
 necessary.
+
+When using an execution sandbox, run `pytest` with sandbox escalation. The
+sandbox blocks the socket operations used by asyncio's internal self-pipe,
+which causes the test suite to hang rather than report a failure. Ruff does not
+require escalation.
 
 Before handing off a change, run:
 
