@@ -216,3 +216,33 @@ async def test_remove_registered_bridge_diagnostics(hass: HomeAssistant) -> None
     bridge.async_process_line('{"device":"A5B813", "model":"C304"}')
     assert registry.async_get(battery.entity_id) is not None
     assert registry.async_get(base.entity_id) is not None
+
+
+async def test_remove_bridge_diagnostics_only_when_discovered(
+    hass: HomeAssistant,
+) -> None:
+    """Remove stale diagnostics once when the bridge device is discovered."""
+    bridge, entry = make_bridge(hass)
+    registry = er.async_get(hass)
+    await async_setup_entry(hass, entry, Mock())
+
+    stale_battery = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_battery_a5b813"
+    )
+    stale_base = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_onbase_a5b813"
+    )
+    bridge.async_process_line('{"device":"A5B813", "model":"C304"}')
+    assert registry.async_get(stale_battery.entity_id) is None
+    assert registry.async_get(stale_base.entity_id) is None
+
+    battery = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_battery_a5b813"
+    )
+    base = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, "fireangel_onbase_a5b813"
+    )
+    bridge.async_process_line('{"device":"A1B2C3", "battery":"OK"}')
+
+    assert registry.async_get(battery.entity_id) is not None
+    assert registry.async_get(base.entity_id) is not None

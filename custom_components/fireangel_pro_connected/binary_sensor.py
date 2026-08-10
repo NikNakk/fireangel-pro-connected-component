@@ -43,13 +43,10 @@ async def async_setup_entry(
     @callback
     def async_add_device(device_id: str) -> None:
         async_add_entities(_detector_entities(bridge, device_id))
+        if bridge.devices[device_id].is_bridge_device:
+            _async_remove_bridge_diagnostics(hass, bridge)
 
     entry.async_on_unload(bridge.async_add_new_device_listener(async_add_device))
-    entry.async_on_unload(
-        bridge.async_add_update_listener(
-            lambda: _async_remove_bridge_diagnostics(hass, bridge)
-        )
-    )
 
 
 @callback
