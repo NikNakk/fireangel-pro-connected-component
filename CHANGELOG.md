@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.7] - 2026-08-10
+
+### Added
+
+- Added a **Last successful test** timestamp sensor for every detector, updated
+  only by passing test events and persisted across Home Assistant restarts.
+
 ### Fixed
 
 - Persisted each detector's latest event, test result, battery condition, and
@@ -101,7 +108,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.6...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.7...HEAD
+[0.1.0-beta.7]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.6...v0.1.0-beta.7
 [0.1.0-beta.6]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.5...v0.1.0-beta.6
 [0.1.0-beta.5]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.4...v0.1.0-beta.5
 [0.1.0-beta.4]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.3...v0.1.0-beta.4

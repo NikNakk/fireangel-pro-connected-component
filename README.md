@@ -11,6 +11,10 @@ alarm, battery, base, event, model, and last-seen state up to date. Devices can
 then be renamed and assigned to areas through the normal Home Assistant device
 page.
 
+Each detector also has a **Last successful test** timestamp sensor. It is empty
+until the bridge reports a test event (including `FIRE TEST`) with a `PASS`
+result, and its value is retained across Home Assistant restarts.
+
 It also provides bridge buttons for fire/CO tests, silencing, and pairing. The
 firmware's emergency simulation commands are intentionally not exposed as
 buttons to reduce the risk of an accidental network-wide alarm.

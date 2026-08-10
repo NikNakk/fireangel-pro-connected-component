@@ -1,8 +1,10 @@
 """Tests for FireAngel Pro Connected entities."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -29,6 +31,7 @@ from custom_components.fireangel_pro_connected.const import (
 from custom_components.fireangel_pro_connected.sensor import (
     FireAngelBridgeMessageSensor,
     FireAngelEventSensor,
+    FireAngelLastTestPassSensor,
 )
 
 
@@ -66,6 +69,7 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     battery = FireAngelBatterySensor(bridge, "A1B2C3")
     base = FireAngelBaseSensor(bridge, "A1B2C3")
     event = FireAngelEventSensor(bridge, "A1B2C3")
+    last_test = FireAngelLastTestPassSensor(bridge, "A1B2C3")
     assert alarm.is_on is battery.is_on is base.is_on is None
     assert alarm.device_class is BinarySensorDeviceClass.SMOKE
     state.event, state.battery, state.base = "FIRE EMERGENCY", "LOW", "OFF"
@@ -75,6 +79,12 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     assert event.extra_state_attributes["result"] == "PASS"
     assert event.device_info["model"] == "WST-630"
     assert event.device_info["name"] == "FireAngel A1B2C3"
+    assert last_test.native_value is None
+    assert last_test.device_class is SensorDeviceClass.TIMESTAMP
+    assert last_test.unique_id == "fireangel_last_test_pass_a1b2c3"
+    state.last_test_pass = datetime(2026, 8, 10, 10, 0, tzinfo=UTC)
+    assert last_test.native_value == state.last_test_pass
+    assert last_test.device_info == event.device_info
     state.name = "Kitchen Fireangel"
     assert event.device_info["name"] == "Kitchen Fireangel"
     state.event, state.battery, state.base = "CLEAR", "OK", "ON"

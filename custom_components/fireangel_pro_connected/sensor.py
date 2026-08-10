@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -23,12 +24,24 @@ async def async_setup_entry(
     bridge = entry.runtime_data
     async_add_entities(
         [FireAngelBridgeMessageSensor(entry)]
-        + [FireAngelEventSensor(bridge, device_id) for device_id in bridge.devices]
+        + [
+            entity
+            for device_id in bridge.devices
+            for entity in (
+                FireAngelEventSensor(bridge, device_id),
+                FireAngelLastTestPassSensor(bridge, device_id),
+            )
+        ]
     )
 
     @callback
     def async_add_device(device_id: str) -> None:
-        async_add_entities([FireAngelEventSensor(bridge, device_id)])
+        async_add_entities(
+            [
+                FireAngelEventSensor(bridge, device_id),
+                FireAngelLastTestPassSensor(bridge, device_id),
+            ]
+        )
 
     entry.async_on_unload(bridge.async_add_new_device_listener(async_add_device))
 
@@ -73,3 +86,20 @@ class FireAngelEventSensor(FireAngelDetectorEntity, SensorEntity):
             "model_code": self.detector.model,
             "last_seen": self.detector.last_seen,
         }
+
+
+class FireAngelLastTestPassSensor(FireAngelDetectorEntity, SensorEntity):
+    """Show when a detector last reported a successful test."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_translation_key = "last_successful_test"
+
+    def __init__(self, bridge: FireAngelBridge, device_id: str) -> None:
+        """Initialize a last successful test sensor."""
+        super().__init__(bridge, device_id)
+        self._attr_unique_id = f"fireangel_last_test_pass_{device_id.lower()}"
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the latest successful detector test timestamp."""
+        return self.detector.last_test_pass
