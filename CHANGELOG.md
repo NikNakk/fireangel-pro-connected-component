@@ -7,6 +7,14 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.11] - 2026-08-10
+
+### Fixed
+
+- Identified model code `1104` as the FP1720W2 heat alarm and updated existing
+  Home Assistant device records when a detector's model is learned after its
+  initial registration.
+
 ## [0.1.0-beta.10] - 2026-08-10
 
 ### Changed
@@ -149,7 +157,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...HEAD
+[0.1.0-beta.11]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...v0.1.0-beta.11
 [0.1.0-beta.10]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.9...v0.1.0-beta.10
 [0.1.0-beta.9]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.8...v0.1.0-beta.9
 [0.1.0-beta.8]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.7...v0.1.0-beta.8

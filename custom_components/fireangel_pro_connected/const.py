@@ -39,6 +39,7 @@ COMMAND_START_PAIRING: Final = b"9~"
 
 MODEL_NAMES: Final = {
     "ED08": "FP2620W2",
+    "1104": "FP1720W2",
     "1103": "WST-630",
     "7803": "W2-CO-10X",
     "C304": "W2-SVP-630",
@@ -50,6 +51,7 @@ MODEL_NAMES: Final = {
 # harvested from another device and its model code does not identify its role.
 MODEL_DEVICE_TYPES: Final = {
     "ED08": DEVICE_TYPE_SMOKE,
+    "1104": DEVICE_TYPE_HEAT,
     "1103": DEVICE_TYPE_SMOKE,
     "7803": DEVICE_TYPE_CO,
 }

@@ -262,6 +262,22 @@ async def test_restore_old_persisted_status_without_last_test_pass(
     assert detector.last_test_pass is None
 
 
+async def test_ignore_invalid_persisted_last_test_timestamp(
+    hass: HomeAssistant,
+) -> None:
+    """Ignore a malformed timestamp while restoring the remaining status."""
+    bridge = make_bridge(hass, options={CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]})
+    bridge._store.async_load = AsyncMock(
+        return_value={"A1B2C3": {"event": "CLEAR", "last_test_pass": "not-a-timestamp"}}
+    )
+
+    await bridge.async_load_persisted_state()
+
+    detector = bridge.devices["A1B2C3"]
+    assert detector.event == "CLEAR"
+    assert detector.last_test_pass is None
+
+
 async def test_serial_lifecycle(hass: HomeAssistant) -> None:
     bridge = make_bridge(hass)
     reader, writer = AsyncMock(), Mock()

@@ -14,6 +14,7 @@ from typing import Any
 import serial_asyncio_fast
 from homeassistant.config_entries import ConfigEntryNotReady
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from serial import SerialException
@@ -33,7 +34,9 @@ from .const import (
     DEVICE_TYPE_BRIDGE,
     DEVICE_TYPE_CO,
     DEVICE_TYPE_SMOKE,
+    DOMAIN,
     MODEL_DEVICE_TYPES,
+    MODEL_NAMES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -273,10 +276,25 @@ class FireAngelBridge:
         self._store.async_delay_save(self._stored_status)
         if is_new or inventory_changed:
             self._persist_devices()
+        if inventory_changed and not is_new and not state.is_bridge_device:
+            self._update_device_registry_model(state)
         if is_new:
             for listener in tuple(self._new_device_callbacks):
                 listener(device_id)
         self._notify_update()
+
+    @callback
+    def _update_device_registry_model(self, state: DetectorState) -> None:
+        """Update a registered detector after its model is learned."""
+        device_registry = dr.async_get(self.hass)
+        device = device_registry.async_get_device(
+            identifiers={(DOMAIN, state.device_id)}
+        )
+        if device is not None:
+            device_registry.async_update_device(
+                device.id,
+                model=MODEL_NAMES.get(state.model, state.model),
+            )
 
     @callback
     def async_add_manual_device(

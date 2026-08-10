@@ -1,6 +1,6 @@
 """Tests for FireAngel Pro Connected setup."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -8,6 +8,10 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.fireangel_pro_connected import (
+    _async_remove_orphaned_bridge_module_device,
+)
+from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
 from custom_components.fireangel_pro_connected.const import (
     CONF_DEVICE_ID,
     CONF_DEVICES,
@@ -102,6 +106,18 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
             "binary_sensor", DOMAIN, "fireangel_alarm_c0ffee"
         )
 
+        detector_device = device_registry.async_get_device(
+            identifiers={(DOMAIN, "A1B2C3")}
+        )
+        assert detector_device is not None
+        assert detector_device.model is None
+        entry.runtime_data.async_process_line('{"device":"A1B2C3", "model":"ED08"}')
+        detector_device = device_registry.async_get_device(
+            identifiers={(DOMAIN, "A1B2C3")}
+        )
+        assert detector_device is not None
+        assert detector_device.model == "FP2620W2"
+
         assert await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -120,3 +136,50 @@ async def test_unload_failure(hass: HomeAssistant) -> None:
     ):
         assert not await async_unload_entry(hass, entry)
     bridge.async_stop.assert_not_awaited()
+
+
+def test_orphaned_bridge_module_cleanup_guards(hass: HomeAssistant) -> None:
+    """Keep module devices that are absent, in use, or lack a bridge parent."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_PORT: "/dev/ttyUSB0"})
+    entry.add_to_hass(hass)
+    bridge = FireAngelBridge(hass, entry)
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+
+    _async_remove_orphaned_bridge_module_device(hass, entry, bridge)
+
+    module_device = device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, DEFAULT_BRIDGE_DEVICE_ID)},
+    )
+    entity_registry.async_get_or_create(
+        "sensor", DOMAIN, "module_in_use", device_id=module_device.id
+    )
+    _async_remove_orphaned_bridge_module_device(hass, entry, bridge)
+    assert device_registry.async_get(module_device.id) is not None
+
+
+def test_orphaned_module_without_registered_bridge_is_retained(
+    hass: HomeAssistant,
+) -> None:
+    """Retain an orphan until the replacement bridge device is registered."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_PORT: "/dev/ttyUSB0"})
+    bridge = FireAngelBridge(hass, entry)
+    module_device = Mock(id="module-device")
+    device_registry = Mock()
+    device_registry.async_get_device.side_effect = [module_device, None]
+
+    with (
+        patch(
+            "custom_components.fireangel_pro_connected.dr.async_get",
+            return_value=device_registry,
+        ),
+        patch("custom_components.fireangel_pro_connected.er.async_get"),
+        patch(
+            "custom_components.fireangel_pro_connected.er.async_entries_for_device",
+            return_value=[],
+        ),
+    ):
+        _async_remove_orphaned_bridge_module_device(hass, entry, bridge)
+
+    device_registry.async_remove_device.assert_not_called()
