@@ -10,6 +10,17 @@ from .bridge import DetectorState, FireAngelBridge
 from .const import DOMAIN, MODEL_NAMES
 
 
+def bridge_device_info(entry: FireAngelConfigEntry) -> DeviceInfo:
+    """Return device registry information for the serial bridge."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, entry.entry_id)},
+        manufacturer="C19HOP",
+        model="WiSafe2-to-HomeAssistant Bridge",
+        name="FireAngel Pro Connected bridge",
+        configuration_url=("https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge"),
+    )
+
+
 class FireAngelBridgeEntity(Entity):
     """Base class for an entity belonging to the serial bridge."""
 
@@ -19,15 +30,7 @@ class FireAngelBridgeEntity(Entity):
         """Initialize a bridge entity."""
         self.bridge = entry.runtime_data
         self._entry = entry
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            manufacturer="C19HOP",
-            model="WiSafe2-to-HomeAssistant Bridge",
-            name="FireAngel Pro Connected bridge",
-            configuration_url=(
-                "https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge"
-            ),
-        )
+        self._attr_device_info = bridge_device_info(entry)
 
     @property
     def available(self) -> bool:
@@ -64,6 +67,8 @@ class FireAngelDetectorEntity(Entity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device registry information."""
+        if self.detector.is_bridge_device:
+            return bridge_device_info(self.bridge.entry)
         model_code = self.detector.model
         return DeviceInfo(
             identifiers={(DOMAIN, self.device_id)},

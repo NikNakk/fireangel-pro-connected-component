@@ -113,6 +113,23 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     bridge._notify_update()
 
 
+def test_bridge_module_entities_belong_to_bridge_device(hass: HomeAssistant) -> None:
+    """Group the WiSafe2 interface entities with the serial bridge."""
+    bridge, entry = make_bridge(hass)
+    bridge.devices["A5B813"] = DetectorState("A5B813", model="C304", bridge_device=True)
+    bridge_device_info = FireAngelBridgeMessageSensor(entry).device_info
+
+    entities = (
+        FireAngelAlarmSensor(bridge, "A5B813"),
+        FireAngelEventSensor(bridge, "A5B813"),
+        FireAngelLastTestPassSensor(bridge, "A5B813"),
+        FireAngelModelCodeSensor(bridge, "A5B813"),
+    )
+
+    assert all(entity.device_info == bridge_device_info for entity in entities)
+    assert all("a5b813" in entity.unique_id for entity in entities)
+
+
 def test_detector_type_inference_and_bridge_entities(hass: HomeAssistant) -> None:
     """Infer known detector models and omit bridge-only status entities."""
     bridge, _entry = make_bridge(hass)

@@ -14,6 +14,9 @@ page.
 Each detector also has a **Last successful test** timestamp sensor. It is empty
 until the bridge reports a test event (including `FIRE TEST`) with a `PASS`
 result, and its value is retained across Home Assistant restarts.
+Alarm, event, and test information reported by the bridge's own WiSafe2
+interface is grouped with the serial bridge device instead of appearing as a
+separate detector.
 
 It also provides bridge buttons for fire/CO tests, silencing, and pairing. The
 firmware's emergency simulation commands are intentionally not exposed as

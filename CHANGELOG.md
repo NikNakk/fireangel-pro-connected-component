@@ -9,6 +9,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0-beta.10] - 2026-08-10
 
+### Changed
+
+- Grouped the configured bridge WiSafe2 interface's alarm, event, last-test,
+  and model-code entities with the serial bridge device instead of registering
+  a separate detector device.
+
 ### Fixed
 
 - Reconciled the divergent beta.8 and beta.9 release histories so beta.8's
