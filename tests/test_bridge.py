@@ -14,7 +14,11 @@ from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
 from custom_components.fireangel_pro_connected.const import (
     COMMAND_PAIRING,
     COMMAND_PAIRING_STATE,
+    COMMAND_SILENCE_CO,
+    COMMAND_SILENCE_FIRE,
     COMMAND_SOUND_CO,
+    COMMAND_SOUND_COMBINED,
+    COMMAND_SOUND_FIRE,
     CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
@@ -389,7 +393,7 @@ def test_passive_protocol_detection_and_v2_dispatch(hass: HomeAssistant) -> None
 
     bridge.async_process_line(
         '{"type":"status","uptime":42,"radio":"ready",'
-        '"counters":{"received":7,"bad":"ignored"}}'
+        '"diagnostics":{"received":7,"bad":"ignored","flag":true}}'
     )
     assert bridge.bridge_uptime == 42
     assert bridge.diagnostic_counters == {"received": 7}
@@ -422,9 +426,14 @@ def test_last_activity_tracks_all_valid_bridge_traffic(hass: HomeAssistant) -> N
             bridge.async_process_line(message)
             assert bridge.last_activity == expected
 
-    bridge.async_process_line('{"type":"event","device":"bad","event":"TEST"}')
-    bridge.async_process_line('{"type":"command_result","id":"bad"}')
-    assert bridge.last_activity == times[-1]
+    malformed_time = times[-1] + timedelta(seconds=1)
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.dt_util.utcnow",
+        return_value=malformed_time,
+    ):
+        bridge.async_process_line('{"type":"event","device":"bad","event":"TEST"}')
+        bridge.async_process_line('{"type":"command_result","id":"bad"}')
+    assert bridge.last_activity == malformed_time
 
 
 def test_v2_attach_event_status_partial_and_malformed(hass: HomeAssistant) -> None:
@@ -576,3 +585,245 @@ def test_activity_availability_uses_75_second_timeout(hass: HomeAssistant) -> No
     ):
         assert bridge.activity_available
         assert not bridge.activity_available
+
+
+@pytest.mark.parametrize("result", ["accepted", "timeout"])
+async def test_v2_normal_command_terminal_results(
+    hass: HomeAssistant, result: str
+) -> None:
+    """Complete normal commands immediately for every documented result."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.async_process_line('{"type":"heartbeat"}')
+
+    command = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_FIRE))
+    await asyncio.sleep(0)
+    bridge.async_process_line(
+        f'{{"type":"command_result","id":0,"command":"sound_fire","result":"{result}"}}'
+    )
+
+    if result == "timeout":
+        with pytest.raises(SerialException, match="timed out"):
+            await command
+    else:
+        assert (await command)["result"] == "accepted"
+
+
+@pytest.mark.parametrize("result", ["paired", "unpaired", "timeout"])
+async def test_v2_pairing_state_terminal_results(
+    hass: HomeAssistant, result: str
+) -> None:
+    """Complete pairing-state queries for every documented terminal result."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.async_process_line('{"type":"heartbeat"}')
+
+    command = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING_STATE))
+    await asyncio.sleep(0)
+    bridge.async_process_line(
+        f'{{"type":"command_result","id":0,"command":"pairing_state",'
+        f'"result":"{result}"}}'
+    )
+
+    if result == "timeout":
+        with pytest.raises(SerialException, match="timed out"):
+            await command
+    else:
+        assert (await command)["result"] == result
+
+
+@pytest.mark.parametrize(
+    ("initial", "final"),
+    [
+        ("accepted", "paired"),
+        ("accepted", "unpaired"),
+        ("already_paired", None),
+        ("timeout", None),
+    ],
+)
+async def test_v2_pairing_terminal_results_release_queued_command(
+    hass: HomeAssistant, initial: str, final: str | None
+) -> None:
+    """Never leave management commands blocked behind terminal pairing results."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.async_process_line('{"type":"heartbeat"}')
+
+    pairing = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING))
+    await asyncio.sleep(0)
+    queued = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_CO))
+    await asyncio.sleep(0)
+    bridge.async_process_line(
+        f'{{"type":"command_result","id":0,"command":"pairing","result":"{initial}"}}'
+    )
+    if initial == "timeout":
+        with pytest.raises(SerialException, match="timed out"):
+            await pairing
+    else:
+        assert (await pairing)["result"] == initial
+
+    if final is not None:
+        assert len(writer.write.call_args_list) == 1
+        bridge.async_process_line(
+            f'{{"type":"command_result","id":0,"command":"pairing","result":"{final}"}}'
+        )
+    await asyncio.sleep(0)
+    assert writer.write.call_args_list[-1].args[0] == b'{"command":"sound_co","id":1}\n'
+    bridge.async_process_line(
+        '{"type":"command_result","id":1,"command":"sound_co","result":"accepted"}'
+    )
+    await queued
+    assert bridge._pairing_finished.is_set()
+
+
+def test_v2_event_result_lifecycle(hass: HomeAssistant) -> None:
+    """Keep test results associated only with their test event."""
+    bridge = make_bridge(hass)
+    bridge.async_process_line(
+        '{"type":"event","device":"A1B2C3","event":"FIRE_TEST",'
+        '"result":"PASS","base":"ON","battery":"OK","raw_status":1}'
+    )
+    state = bridge.devices["A1B2C3"]
+    test_time = state.last_test_pass
+
+    bridge.async_process_line(
+        '{"type":"event","device":"A1B2C3","event":"STATUS",'
+        '"base":"OFF","battery":"LOW","raw_status":71}'
+    )
+    assert (state.event, state.result, state.last_test_pass) == (
+        "FIRE TEST",
+        "PASS",
+        test_time,
+    )
+
+    for event in ("FIRE_EMERGENCY", "SILENCE", "MISSING"):
+        test_time = state.last_test_pass
+        bridge.async_process_line(
+            f'{{"type":"event","device":"A1B2C3","event":"{event}","raw_status":0}}'
+        )
+        assert state.result is None
+        assert state.last_test_pass == test_time
+        bridge.async_process_line(
+            '{"type":"event","device":"A1B2C3","event":"FIRE_TEST",'
+            '"result":"PASS","raw_status":1}'
+        )
+
+
+async def test_correlated_pairing_error_releases_queued_command(
+    hass: HomeAssistant,
+) -> None:
+    """Release pairing serialization when firmware sends a correlated error."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.async_process_line('{"type":"heartbeat"}')
+    pairing = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING))
+    await asyncio.sleep(0)
+    queued = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_CO))
+    await asyncio.sleep(0)
+
+    bridge.async_process_line('{"type":"error","id":0,"code":"pairing_state_timeout"}')
+
+    with pytest.raises(SerialException, match="pairing_state_timeout"):
+        await pairing
+    await asyncio.sleep(0)
+    assert writer.write.call_args_list[-1].args[0] == b'{"command":"sound_co","id":1}\n'
+    bridge.async_process_line('{"type":"command_result","id":1,"result":"accepted"}')
+    await queued
+    assert bridge._pairing_finished.is_set()
+
+
+def test_future_v2_event_records_activity_without_state_change(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Treat future event enums as valid traffic without guessing semantics."""
+    bridge = make_bridge(hass)
+    bridge.async_process_line(
+        '{"type":"event","device":"A1B2C3","event":"FIRE_EMERGENCY"}'
+    )
+    previous_event = bridge.devices["A1B2C3"].event
+    previous_activity = bridge.last_activity
+
+    bridge.async_process_line(
+        '{"type":"event","device":"A1B2C3","event":"END_OF_LIFE","raw_status":7}'
+    )
+
+    assert bridge.protocol_mode == ProtocolMode.V2
+    assert bridge.last_activity is not None
+    assert bridge.last_activity >= previous_activity
+    assert bridge.devices["A1B2C3"].event == previous_event
+    assert not [record for record in caplog.records if record.levelno >= 30]
+
+
+def test_literal_v2_protocol_contract_messages(hass: HomeAssistant) -> None:
+    """Parse representative wire messages copied from the V2 specification."""
+    bridge = make_bridge(hass)
+    messages = (
+        '{"type":"bridge","event":"startup","firmware":"2.0.0","protocol":2,"radio":"ready"}',
+        '{"type":"heartbeat","uptime":123456,"radio":"ready"}',
+        '{"type":"status","id":17,"firmware":"2.0.0","protocol":2,"uptime":123456,"radio":"ready","diagnostics":{"overflow":0,"malformed":0,"incomplete":0,"unknown":0,"command_timeout":0,"command_retry":0,"radio_reinit":0}}',
+        '{"type":"event","device":"92BF1A","model":"ED08","event":"FIRE_TEST","result":"PASS","base":"ON","battery":"OK","raw_status":1}',
+        '{"type":"event","device":"92BF1A","model":"7803","event":"CO_TEST","result":"FAIL","base":"ON","raw_status":0}',
+        '{"type":"event","device":"92BF1A","model":"ED08","event":"STATUS","base":"ON","battery":"LOW","raw_status":71}',
+        '{"type":"event","device":"92BF1A","event":"FIRE_EMERGENCY","base":"ON","raw_status":0}',
+        '{"type":"event","device":"92BF1A","event":"CO_EMERGENCY","base":"ON","raw_status":0}',
+        '{"type":"event","device":"92BF1A","event":"SILENCE","base":"ON","raw_status":1}',
+        '{"type":"event","device":"92BF1A","event":"MISSING","base":"MISSING","battery":"MISSING","raw_status":0}',
+        '{"type":"command_result","id":17,"command":"sound_fire","result":"accepted"}',
+        '{"type":"command_result","id":17,"command":"sound_fire","result":"timeout"}',
+        '{"type":"command_result","id":17,"command":"pairing","result":"already_paired"}',
+        '{"type":"error","id":17,"code":"unknown_command"}',
+    )
+    for message in messages:
+        bridge.async_process_line(message)
+
+    assert bridge.protocol_mode == ProtocolMode.V2
+    assert bridge.diagnostic_counters == {
+        "overflow": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "unknown": 0,
+        "command_timeout": 0,
+        "command_retry": 0,
+        "radio_reinit": 0,
+    }
+    assert bridge.last_error == "unknown_command"
+
+
+async def test_all_v2_command_bytes_match_protocol_contract(
+    hass: HomeAssistant,
+) -> None:
+    """Keep every supported host command compact and free of an inbound type."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.async_process_line('{"type":"heartbeat"}')
+    commands = (
+        COMMAND_SOUND_CO,
+        COMMAND_SOUND_FIRE,
+        COMMAND_SOUND_COMBINED,
+        COMMAND_SILENCE_CO,
+        COMMAND_SILENCE_FIRE,
+        COMMAND_PAIRING_STATE,
+        COMMAND_PAIRING,
+    )
+
+    for request_id, command_name in enumerate(commands):
+        task = asyncio.create_task(bridge.async_send_command(command_name))
+        await asyncio.sleep(0)
+        expected = f'{{"command":"{command_name}","id":{request_id}}}\n'.encode()
+        assert writer.write.call_args_list[-1].args[0] == expected
+        result = "paired" if command_name == COMMAND_PAIRING_STATE else "accepted"
+        bridge.async_process_line(
+            f'{{"type":"command_result","id":{request_id},'
+            f'"command":"{command_name}","result":"{result}"}}'
+        )
+        await task
+        if command_name == COMMAND_PAIRING:
+            bridge.async_process_line(
+                f'{{"type":"command_result","id":{request_id},'
+                '"command":"pairing","result":"paired"}'
+            )

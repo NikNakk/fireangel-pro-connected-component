@@ -7,6 +7,22 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.16] - 2026-08-11
+
+### Fixed
+
+- Completed Protocol 2 commands immediately when firmware reports a timeout,
+  and released pairing serialization for every documented terminal pairing
+  result or correlated error instead of potentially blocking later commands.
+- Read Protocol 2 diagnostic counters from the firmware-defined `diagnostics`
+  object and retained valid counters added by future firmware versions.
+- Kept detector test results associated with test events, clearing stale results
+  when a later emergency, silence, or missing event arrives while preserving
+  event and result state across status-only updates.
+- Counted recognized Protocol 2 traffic as bridge activity before interpreting
+  event enums, so future event values no longer make an active bridge appear
+  unavailable or overwrite known detector state.
+
 ## [0.1.0-beta.15] - 2026-08-11
 
 ### Fixed
@@ -222,7 +238,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.15...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.16...HEAD
+[0.1.0-beta.16]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.15...v0.1.0-beta.16
 [0.1.0-beta.15]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.14...v0.1.0-beta.15
 [0.1.0-beta.14]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...v0.1.0-beta.14
 [0.1.0-beta.13]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...v0.1.0-beta.13

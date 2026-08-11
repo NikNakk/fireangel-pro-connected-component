@@ -403,6 +403,9 @@ class FireAngelBridge:
                 )
             if normalized_type in _V2_TYPES:
                 self._set_protocol(ProtocolMode.V2)
+                # A recognized typed message is valid V2 traffic even when a
+                # future enum value is not understood by this integration.
+                self._record_activity(now)
                 self._process_v2(normalized_type, payload, now)
             else:
                 _LOGGER.debug("Ignoring unknown V2 message type: %s", message_type)
@@ -509,13 +512,11 @@ class FireAngelBridge:
         if message_type == "bridge":
             if payload.get("protocol") == 2:
                 self.protocol_version = 2
-                self._record_activity(now)
             if isinstance(payload.get("firmware"), str):
                 self.firmware_version = payload["firmware"]
             if isinstance(payload.get("radio"), str):
                 self.radio_state = payload["radio"]
         elif message_type in {"heartbeat", "status"}:
-            self._record_activity(now)
             if message_type == "heartbeat":
                 self.last_heartbeat = now
             if isinstance(payload.get("uptime"), int):
@@ -524,7 +525,7 @@ class FireAngelBridge:
                 self.radio_state = payload["radio"]
             if isinstance(payload.get("firmware"), str):
                 self.firmware_version = payload["firmware"]
-            counters = payload.get("counters")
+            counters = payload.get("diagnostics")
             if isinstance(counters, dict):
                 self.diagnostic_counters.update(
                     {
@@ -539,8 +540,7 @@ class FireAngelBridge:
             self._process_v2_event(payload, now)
             return
         elif message_type == "command_result":
-            if self._process_command_result(payload):
-                self._record_activity(now)
+            self._process_command_result(payload)
         elif message_type == "error":
             self.last_error = str(
                 payload.get(
@@ -548,16 +548,14 @@ class FireAngelBridge:
                     payload.get("message", payload.get("error", "Unknown error")),
                 )
             )
-            self._record_activity(now)
             request_id = payload.get("id")
-            if (
-                isinstance(request_id, int)
-                and (future := self._pending_commands.get(request_id)) is not None
-                and not future.done()
-            ):
-                future.set_exception(SerialException(self.last_error))
+            if isinstance(request_id, int):
                 if request_id == self._pairing_request_id:
                     self._finish_pairing()
+                if (
+                    future := self._pending_commands.get(request_id)
+                ) is not None and not future.done():
+                    future.set_exception(SerialException(self.last_error))
         self._notify_update()
 
     def _process_v2_event(self, payload: dict[str, Any], now: datetime) -> None:
@@ -571,7 +569,6 @@ class FireAngelBridge:
         if event_name not in _V2_EVENTS:
             self._notify_update()
             return
-        self._record_activity(now)
         fields = dict(payload)
         normalized_event = _V2_EVENTS[event_name]
         if normalized_event is None:
@@ -587,14 +584,26 @@ class FireAngelBridge:
         if not isinstance(request_id, int) or not isinstance(status, str):
             return False
         self.last_command_result = dict(payload)
-        if request_id == self._pairing_request_id and status in {"paired", "unpaired"}:
+        command = self._pending_command_names.get(request_id)
+        if request_id == self._pairing_request_id and status in {
+            "paired",
+            "unpaired",
+            "already_paired",
+            "timeout",
+        }:
             self._finish_pairing()
         future = self._pending_commands.get(request_id)
-        command = self._pending_command_names.get(request_id)
         if future is None or future.done():
+            return True
+        if status == "timeout":
+            future.set_exception(
+                SerialException(f"FireAngel {command or 'command'} timed out")
+            )
             return True
         if command == COMMAND_PAIRING_STATE:
             complete = status in {"paired", "unpaired"}
+        elif command == COMMAND_PAIRING:
+            complete = status in {"accepted", "paired", "unpaired", "already_paired"}
         else:
             complete = status in {"accepted", "paired", "unpaired"}
         if complete:
@@ -622,7 +631,7 @@ class FireAngelBridge:
         if model is not None:
             inventory_changed = state.model != model
             state.model = model
-        for key in ("event", "result", "base", "battery"):
+        for key in ("base", "battery"):
             value = fields.get(key)
             if not isinstance(value, str):
                 continue
@@ -632,6 +641,19 @@ class FireAngelBridge:
             if v2 and key == "battery" and normalized not in {"OK", "LOW", "MISSING"}:
                 continue
             setattr(state, key, normalized)
+        event_value = fields.get("event")
+        if isinstance(event_value, str):
+            event = event_value.strip().upper()
+            state.event = event
+            if event == "TEST" or event.endswith(" TEST"):
+                result_value = fields.get("result")
+                state.result = (
+                    result_value.strip().upper()
+                    if isinstance(result_value, str)
+                    else None
+                )
+            else:
+                state.result = None
         if v2 and "raw_status" in fields:
             state.raw_status = fields["raw_status"]
         event = str(fields.get("event", "")).strip().upper()

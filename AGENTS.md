@@ -163,3 +163,12 @@ change.
 - Call out breaking changes, migration steps, and safety-relevant behavior
   explicitly. Do not add routine formatting or test-only changes unless they
   materially affect users or contributors.
+
+## Release publishing
+
+- Publishing a release from this repository only requires committing the
+  prepared release on `main`, creating its annotated version tag, and pushing
+  both `main` and the tag to `origin`.
+- Do not require GitHub CLI authentication, create a pull request, or publish a
+  GitHub Release unless the user explicitly requests one of those additional
+  actions. A successfully pushed tag is sufficient.
