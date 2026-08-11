@@ -75,6 +75,7 @@
       "alarm": {"name": "Alarm"},
       "base_problem": {"name": "Base status"},
       "battery_low": {"name": "Battery"},
+      "bridge_activity": {"name": "Activity"},
       "bridge_connection": {"name": "Connection"}
     },
     "button": {

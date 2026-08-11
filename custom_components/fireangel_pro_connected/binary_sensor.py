@@ -32,7 +32,10 @@ async def async_setup_entry(
     bridge = entry.runtime_data
     _async_remove_bridge_diagnostics(hass, bridge)
     async_add_entities(
-        [FireAngelBridgeConnectionSensor(entry)]
+        [
+            FireAngelBridgeConnectionSensor(entry),
+            FireAngelBridgeActivitySensor(entry),
+        ]
         + [
             entity
             for device_id in bridge.devices
@@ -103,6 +106,29 @@ class FireAngelBridgeConnectionSensor(FireAngelBridgeEntity, BinarySensorEntity)
     @property
     def available(self) -> bool:
         """The connection sensor remains available while disconnected."""
+        return True
+
+
+class FireAngelBridgeActivitySensor(FireAngelBridgeEntity, BinarySensorEntity):
+    """Represent whether recognized bridge traffic was received recently."""
+
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "bridge_activity"
+
+    def __init__(self, entry: FireAngelConfigEntry) -> None:
+        """Initialize the activity sensor."""
+        super().__init__(entry)
+        self._attr_unique_id = f"{entry.entry_id}_activity"
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether recognized traffic was received within the timeout."""
+        return self.bridge.activity_available
+
+    @property
+    def available(self) -> bool:
+        """Keep the diagnostic visible when bridge activity becomes stale."""
         return True
 
 

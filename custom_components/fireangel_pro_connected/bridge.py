@@ -369,12 +369,12 @@ class FireAngelBridge:
         line = line.strip()
         if not line:
             return
-        self.last_message = line
         now = dt_util.utcnow()
 
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
+            self.last_message = line
             if self._is_legacy_text(line):
                 self._set_protocol(ProtocolMode.LEGACY)
                 self._record_activity(now)
@@ -387,12 +387,15 @@ class FireAngelBridge:
             return
 
         if not isinstance(payload, dict):
+            self.last_message = line
             self._notify_update()
             return
 
         message_type = payload.get("type")
         if isinstance(message_type, str):
             normalized_type = message_type.casefold()
+            if normalized_type != "heartbeat":
+                self.last_message = line
             if normalized_type in _V2_TYPES:
                 self._set_protocol(ProtocolMode.V2)
                 self._process_v2(normalized_type, payload, now)
@@ -417,6 +420,7 @@ class FireAngelBridge:
             self._notify_update()
             return
 
+        self.last_message = line
         device_id = self.normalize_device_id(str(fields.get("device", "")))
         if device_id is None:
             self._notify_update()

@@ -7,6 +7,19 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.13] - 2026-08-11
+
+### Added
+
+- Added a diagnostic **Activity** binary sensor that remains on while valid
+  bridge traffic has been received recently, showing heartbeat health without
+  recording a new timestamp for every keepalive.
+
+### Changed
+
+- Excluded legacy and Protocol 2 heartbeat payloads from the **Last message**
+  sensor to avoid periodic recorder entries when no meaningful event occurred.
+
 ## [0.1.0-beta.12] - 2026-08-11
 
 ### Added
@@ -182,7 +195,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...HEAD
+[0.1.0-beta.13]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...v0.1.0-beta.13
 [0.1.0-beta.12]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...v0.1.0-beta.12
 [0.1.0-beta.11]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...v0.1.0-beta.11
 [0.1.0-beta.10]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.9...v0.1.0-beta.10

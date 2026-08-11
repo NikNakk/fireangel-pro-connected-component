@@ -13,6 +13,7 @@ from custom_components.fireangel_pro_connected.binary_sensor import (
     FireAngelAlarmSensor,
     FireAngelBaseSensor,
     FireAngelBatterySensor,
+    FireAngelBridgeActivitySensor,
     FireAngelBridgeConnectionSensor,
     _detector_entities,
     async_setup_entry,
@@ -55,12 +56,15 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     bridge, entry = make_bridge(hass)
     bridge.devices["A1B2C3"] = DetectorState("A1B2C3")
     connection = FireAngelBridgeConnectionSensor(entry)
+    activity = FireAngelBridgeActivitySensor(entry)
     message = FireAngelBridgeMessageSensor(entry)
-    assert connection.available and not connection.is_on
+    assert connection.available and activity.available
+    assert not connection.is_on and not activity.is_on
     assert message.native_value is None
     bridge.connected, bridge.last_message = True, "READY"
     bridge.last_activity = datetime.now(UTC)
-    assert connection.is_on and message.available and message.native_value == "READY"
+    assert connection.is_on and activity.is_on
+    assert message.available and message.native_value == "READY"
 
     message.hass = hass
     message.async_write_ha_state = Mock()

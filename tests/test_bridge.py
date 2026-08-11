@@ -163,10 +163,15 @@ def test_heartbeat_and_plain_status(hass: HomeAssistant) -> None:
     bridge = make_bridge(hass)
     bridge.async_process_line('{"heartBeat":"3"}')
     assert bridge.last_heartbeat is not None
+    assert bridge.last_message is None
 
     bridge.async_process_line("NETWORK PAIRED")
     assert bridge.last_message == "NETWORK PAIRED"
     assert bridge.devices == {}
+
+    bridge.async_process_line('{"type":"heartbeat","uptime":42}')
+    assert bridge.last_message == "NETWORK PAIRED"
+    assert bridge.bridge_uptime == 42
 
 
 def test_normalize_hex_identifiers() -> None:
