@@ -7,6 +7,19 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.14] - 2026-08-11
+
+### Fixed
+
+- Resized the bundled integration icon to Home Assistant's standard 256-pixel
+  size and added a 512-pixel high-DPI variant for sharper display.
+
+### Changed
+
+- Replaced the diagnostic **Last message** entity's raw JSON state with a short
+  protocol-aware summary, retained the full line as an attribute and in
+  diagnostics, and disabled the entity by default for new installations.
+
 ## [0.1.0-beta.13] - 2026-08-11
 
 ### Added
@@ -195,7 +208,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.14...HEAD
+[0.1.0-beta.14]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...v0.1.0-beta.14
 [0.1.0-beta.13]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...v0.1.0-beta.13
 [0.1.0-beta.12]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...v0.1.0-beta.12
 [0.1.0-beta.11]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...v0.1.0-beta.11

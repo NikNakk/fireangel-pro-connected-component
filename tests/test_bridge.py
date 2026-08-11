@@ -167,10 +167,12 @@ def test_heartbeat_and_plain_status(hass: HomeAssistant) -> None:
 
     bridge.async_process_line("NETWORK PAIRED")
     assert bridge.last_message == "NETWORK PAIRED"
+    assert bridge.last_message_summary == "NETWORK PAIRED"
     assert bridge.devices == {}
 
     bridge.async_process_line('{"type":"heartbeat","uptime":42}')
     assert bridge.last_message == "NETWORK PAIRED"
+    assert bridge.last_message_summary == "NETWORK PAIRED"
     assert bridge.bridge_uptime == 42
 
 
@@ -383,6 +385,7 @@ def test_passive_protocol_detection_and_v2_dispatch(hass: HomeAssistant) -> None
     assert detector.event == "CARBON MONOXIDE TEST"
     assert detector.last_test_pass == detector.last_seen
     assert detector.raw_status == 129
+    assert bridge.last_message_summary == "A1B2C3 · CARBON MONOXIDE TEST · PASS"
 
     bridge.async_process_line(
         '{"type":"status","uptime":42,"radio":"ready",'

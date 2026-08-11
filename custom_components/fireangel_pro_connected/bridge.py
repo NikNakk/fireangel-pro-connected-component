@@ -120,6 +120,7 @@ class FireAngelBridge:
         self.devices: dict[str, DetectorState] = {}
         self.connected = False
         self.last_message: str | None = None
+        self.last_message_summary: str | None = None
         self.last_heartbeat: datetime | None = None
         self.last_activity: datetime | None = None
         self.protocol_mode = ProtocolMode.UNKNOWN
@@ -374,7 +375,9 @@ class FireAngelBridge:
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
-            self.last_message = line
+            self._record_message(
+                line, line if self._is_legacy_text(line) else "Unrecognized message"
+            )
             if self._is_legacy_text(line):
                 self._set_protocol(ProtocolMode.LEGACY)
                 self._record_activity(now)
@@ -387,7 +390,7 @@ class FireAngelBridge:
             return
 
         if not isinstance(payload, dict):
-            self.last_message = line
+            self._record_message(line, "Unrecognized message")
             self._notify_update()
             return
 
@@ -395,7 +398,9 @@ class FireAngelBridge:
         if isinstance(message_type, str):
             normalized_type = message_type.casefold()
             if normalized_type != "heartbeat":
-                self.last_message = line
+                self._record_message(
+                    line, self._summarize_v2_message(normalized_type, payload)
+                )
             if normalized_type in _V2_TYPES:
                 self._set_protocol(ProtocolMode.V2)
                 self._process_v2(normalized_type, payload, now)
@@ -420,13 +425,70 @@ class FireAngelBridge:
             self._notify_update()
             return
 
-        self.last_message = line
+        self._record_message(line, self._summarize_legacy_message(fields))
         device_id = self.normalize_device_id(str(fields.get("device", "")))
         if device_id is None:
             self._notify_update()
             return
         self._set_protocol(ProtocolMode.LEGACY)
         self._update_detector(fields, now, v2=False)
+
+    def _record_message(self, line: str, summary: str) -> None:
+        """Retain a raw non-heartbeat line and its display-friendly summary."""
+        self.last_message = line
+        self.last_message_summary = summary[:255]
+
+    def _summarize_v2_message(self, message_type: str, payload: dict[str, Any]) -> str:
+        """Build a concise summary from validated protocol-2 fields."""
+        if message_type == "event":
+            parts = [
+                self.normalize_device_id(str(payload.get("device", ""))) or "Detector"
+            ]
+            if isinstance(event := payload.get("event"), str):
+                parts.append(_V2_EVENTS.get(event.upper(), event.upper()) or "STATUS")
+            if isinstance(result := payload.get("result"), str):
+                parts.append(result.upper())
+            return " · ".join(parts)
+        if message_type == "bridge":
+            parts = ["Bridge"]
+            if isinstance(event := payload.get("event"), str):
+                parts.append(event.replace("_", " ").title())
+            if isinstance(protocol := payload.get("protocol"), int):
+                parts.append(f"Protocol {protocol}")
+            return " · ".join(parts)
+        if message_type == "status":
+            return "Bridge · Status"
+        if message_type == "command_result":
+            request_id = payload.get("id")
+            command = payload.get("command")
+            if not isinstance(command, str) and isinstance(request_id, int):
+                command = self._pending_command_names.get(request_id)
+            label = (
+                command.replace("_", " ").title()
+                if isinstance(command, str)
+                else "Command"
+            )
+            result = payload.get("result", payload.get("status"))
+            return f"{label} · {result.title()}" if isinstance(result, str) else label
+        if message_type == "error":
+            error = payload.get("message", payload.get("error"))
+            return f"Error · {error}" if isinstance(error, str) else "Error"
+        return f"Unrecognized message · {message_type}"
+
+    def _summarize_legacy_message(self, fields: dict[str, Any]) -> str:
+        """Build a concise summary from legacy detector fields."""
+        parts = [self.normalize_device_id(str(fields.get("device", ""))) or "Detector"]
+        if isinstance(event := fields.get("event"), str):
+            parts.append(event.upper())
+            if isinstance(result := fields.get("result"), str):
+                parts.append(result.upper())
+            return " · ".join(parts)
+        for key, label in (("battery", "Battery"), ("base", "Base")):
+            if isinstance(value := fields.get(key), str):
+                parts.append(f"{label} {value.upper()}")
+        if len(parts) == 1 and isinstance(model := fields.get("model"), str):
+            parts.append(f"Model {model.upper()}")
+        return " · ".join(parts)
 
     @staticmethod
     def _is_legacy_text(line: str) -> bool:

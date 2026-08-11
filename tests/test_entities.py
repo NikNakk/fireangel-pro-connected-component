@@ -62,9 +62,12 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     assert not connection.is_on and not activity.is_on
     assert message.native_value is None
     bridge.connected, bridge.last_message = True, "READY"
+    bridge.last_message_summary = "Bridge ready"
     bridge.last_activity = datetime.now(UTC)
     assert connection.is_on and activity.is_on
-    assert message.available and message.native_value == "READY"
+    assert message.available and message.native_value == "Bridge ready"
+    assert message.extra_state_attributes == {"raw_message": "READY"}
+    assert not message.entity_registry_enabled_default
 
     message.hass = hass
     message.async_write_ha_state = Mock()

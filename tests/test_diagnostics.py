@@ -46,3 +46,4 @@ async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None
     assert diagnostics["bridge"]["protocol_version"] == 2
     assert diagnostics["bridge"]["firmware_version"] == "2.0.0"
     assert diagnostics["bridge"]["last_activity"] is not None
+    assert diagnostics["bridge"]["last_message"].startswith('{"type":"bridge"')

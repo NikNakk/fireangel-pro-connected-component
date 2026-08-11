@@ -53,6 +53,7 @@ class FireAngelBridgeMessageSensor(FireAngelBridgeEntity, SensorEntity):
     """Show the last line received from the bridge."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "bridge_message"
 
     def __init__(self, entry: FireAngelConfigEntry) -> None:
@@ -62,8 +63,13 @@ class FireAngelBridgeMessageSensor(FireAngelBridgeEntity, SensorEntity):
 
     @property
     def native_value(self) -> str | None:
-        """Return the last bridge line."""
-        return self.bridge.last_message
+        """Return a concise summary of the last non-heartbeat line."""
+        return self.bridge.last_message_summary
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | None]:
+        """Expose the original bridge line for troubleshooting."""
+        return {"raw_message": self.bridge.last_message}
 
 
 class FireAngelEventSensor(FireAngelDetectorEntity, SensorEntity):

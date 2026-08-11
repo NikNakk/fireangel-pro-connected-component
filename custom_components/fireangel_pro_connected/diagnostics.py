@@ -30,6 +30,7 @@ async def async_get_config_entry_diagnostics(
             "bridge_uptime": bridge.bridge_uptime,
             "last_heartbeat": bridge.last_heartbeat,
             "last_activity": bridge.last_activity,
+            "last_message": bridge.last_message,
             "last_error": bridge.last_error,
             "last_command_result": bridge.last_command_result,
             "diagnostic_counters": bridge.diagnostic_counters,
