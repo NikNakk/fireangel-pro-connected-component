@@ -1,19 +1,18 @@
 # FireAngel Pro Connected
 
-A custom Home Assistant integration for the maintained
-[NikNakk WiSafe2-to-HomeAssistant Bridge fork](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge),
-which is based on the
+A custom Home Assistant integration with maintained Arduino bridge firmware,
+based on the
 [original C19HOP project](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge).
 It communicates directly with the Arduino over USB serial; no cloud service is
 involved.
 
-The recommended legacy image is the fork's
-[bug-fixed `Arduino/` firmware](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino).
+The recommended legacy image is the bundled
+[bug-fixed firmware](firmware/Arduino/FireAngelNano/FireAngelNano.ino).
 The original C19HOP legacy firmware remains supported for existing users. The
-integration also supports the fork's structured
-[Protocol 2 firmware](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino-V2).
-The V2 wire format is documented in the fork's
-[serial protocol specification](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/blob/master/docs/serial-protocol-v2.md).
+integration also supports the bundled structured
+[Protocol 2 firmware](firmware/Arduino/FireAngelNanoV2/FireAngelNanoV2.ino).
+The V2 wire format is documented in the authoritative
+[serial protocol specification](firmware/docs/serial-protocol-v2.md).
 The integration sends no negotiation probe and automatically creates a Home
 Assistant device for each unfamiliar six-digit detector ID, and keeps its
 alarm, battery, base, event, model, and last-seen state up to date. Devices can
@@ -53,6 +52,11 @@ source edits are picked up after restarting Home Assistant.
 Without a devcontainer, create a Python virtual environment and install
 `requirements-dev.txt` before running the same test and lint commands.
 
+The two Arduino images and their shared library live under [`firmware/`](firmware/README.md).
+CI compiles both images for `arduino:avr:nano:cpu=atmega328old`. These files are
+kept outside `custom_components`, so HACS installs only the Home Assistant
+runtime integration.
+
 ## Installation
 
 ### HACS
@@ -78,10 +82,10 @@ directory in your Home Assistant configuration, then restart Home Assistant.
    stable `/dev/serial/by-id/...` path. Keep the default baud rate of `115200`
    for all supported firmware images. The integration identifies legacy or
    Protocol 2 traffic automatically, including after reconnection. For current
-   firmware, flash either the fork's
-   [bug-fixed legacy `Arduino/` image](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino)
+   firmware, flash either the bundled
+   [bug-fixed legacy image](firmware/Arduino/FireAngelNano/FireAngelNano.ino)
    or its
-   [structured `Arduino-V2/` image](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino-V2).
+   [structured Protocol V2 image](firmware/Arduino/FireAngelNanoV2/FireAngelNanoV2.ino).
 
 The integration remembers detectors after their first message. A newly
 discovered detector appears as a device named `FireAngel A1B2C3`; rename it and

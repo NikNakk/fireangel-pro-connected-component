@@ -99,6 +99,7 @@ class FireAngelEventSensor(FireAngelDetectorEntity, SensorEntity):
             "result": self.detector.result,
             "model_code": self.detector.model,
             "last_seen": self.detector.last_seen,
+            "last_raw_frame": self.detector.last_raw_frame,
         }
 
 

@@ -7,6 +7,25 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Bundled the maintained legacy and Protocol V2 Arduino images, shared
+  `WiSafeRadioCore` library, and authoritative Protocol V2 documentation under
+  `firmware/` so integration and firmware changes can be maintained and
+  released together without adding firmware files to the HACS-installed
+  integration directory.
+- Retained the optional raw WiSafe2 frame from Protocol 2 `MISSING` events as
+  diagnostic evidence, including events which report the configured bridge
+  WiSafe2 device ID.
+
+### Fixed
+
+- Reported protocol version 2 when attaching after firmware startup and first
+  receiving any recognized V2 message, while rejecting explicit incompatible
+  protocol values.
+- Added a 35-second watchdog for the terminal result after pairing is accepted,
+  preventing a lost serial result from blocking later management commands.
+
 ## [0.1.0-beta.16] - 2026-08-11
 
 ### Fixed

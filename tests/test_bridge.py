@@ -1,6 +1,7 @@
 """Tests for the WiSafe2 serial bridge protocol."""
 
 import asyncio
+import json
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -402,6 +403,42 @@ def test_passive_protocol_detection_and_v2_dispatch(hass: HomeAssistant) -> None
     assert bridge.protocol_mode == ProtocolMode.LEGACY
 
 
+@pytest.mark.parametrize(
+    "message",
+    [
+        '{"type":"heartbeat","uptime":123456,"radio":"ready"}',
+        '{"type":"status","uptime":123456,"radio":"ready"}',
+        '{"type":"event","device":"A1B2C3","event":"STATUS",'
+        '"base":"ON","battery":"OK","raw_status":0}',
+    ],
+)
+def test_v2_protocol_version_when_startup_was_missed(
+    hass: HomeAssistant, message: str
+) -> None:
+    """Infer Protocol 2 from every recognized envelope after startup."""
+    bridge = make_bridge(hass)
+
+    bridge.async_process_line(message)
+
+    assert bridge.protocol_mode == ProtocolMode.V2
+    assert bridge.protocol_version == 2
+
+
+@pytest.mark.parametrize("protocol", [3, "2", True, None])
+def test_reject_explicit_incompatible_v2_protocol(
+    hass: HomeAssistant, protocol: object
+) -> None:
+    """Do not identify an explicitly incompatible envelope as Protocol 2."""
+    bridge = make_bridge(hass)
+
+    bridge.async_process_line(
+        json.dumps({"type": "status", "protocol": protocol, "uptime": 1})
+    )
+
+    assert bridge.protocol_mode == ProtocolMode.UNKNOWN
+    assert bridge.protocol_version is None
+
+
 def test_last_activity_tracks_all_valid_bridge_traffic(hass: HomeAssistant) -> None:
     """Track meaningful traffic because heartbeats are idle-only keep-alives."""
     bridge = make_bridge(hass)
@@ -667,6 +704,7 @@ async def test_v2_pairing_terminal_results_release_queued_command(
 
     if final is not None:
         assert len(writer.write.call_args_list) == 1
+        assert bridge._cancel_pairing_watchdog is not None
         bridge.async_process_line(
             f'{{"type":"command_result","id":0,"command":"pairing","result":"{final}"}}'
         )
@@ -677,6 +715,9 @@ async def test_v2_pairing_terminal_results_release_queued_command(
     )
     await queued
     assert bridge._pairing_finished.is_set()
+    assert bridge._cancel_pairing_watchdog is None
+    if final is not None:
+        assert bridge.last_error is None
 
 
 def test_v2_event_result_lifecycle(hass: HomeAssistant) -> None:
@@ -725,15 +766,78 @@ async def test_correlated_pairing_error_releases_queued_command(
     queued = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_CO))
     await asyncio.sleep(0)
 
+    bridge.async_process_line(
+        '{"type":"command_result","id":0,"command":"pairing","result":"accepted"}'
+    )
+    await pairing
+    assert bridge._cancel_pairing_watchdog is not None
     bridge.async_process_line('{"type":"error","id":0,"code":"pairing_state_timeout"}')
 
-    with pytest.raises(SerialException, match="pairing_state_timeout"):
-        await pairing
     await asyncio.sleep(0)
     assert writer.write.call_args_list[-1].args[0] == b'{"command":"sound_co","id":1}\n'
     bridge.async_process_line('{"type":"command_result","id":1,"result":"accepted"}')
     await queued
     assert bridge._pairing_finished.is_set()
+    assert bridge._cancel_pairing_watchdog is None
+
+
+async def test_pairing_watchdog_releases_queued_command(hass: HomeAssistant) -> None:
+    """Release serialization if an accepted pairing has no terminal result."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.protocol_mode = ProtocolMode.V2
+    cancel_watchdog = Mock()
+
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.async_call_later",
+        return_value=cancel_watchdog,
+    ) as schedule:
+        pairing = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING))
+        await asyncio.sleep(0)
+        queued = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_CO))
+        await asyncio.sleep(0)
+        bridge._process_command_result(
+            {"type": "command_result", "id": 0, "result": "accepted"}
+        )
+        await pairing
+        assert schedule.call_args.args[1] == 35
+        assert not queued.done()
+
+        bridge._pairing_watchdog_expired(datetime.now(UTC))
+
+    await asyncio.sleep(0)
+    assert bridge.last_error == "Pairing terminal result was not received"
+    assert bridge._pairing_finished.is_set()
+    assert bridge._cancel_pairing_watchdog is None
+    assert writer.write.call_args_list[-1].args[0] == b'{"command":"sound_co","id":1}\n'
+    bridge._process_command_result({"id": 1, "result": "accepted"})
+    await queued
+
+
+async def test_disconnect_cancels_pairing_watchdog(hass: HomeAssistant) -> None:
+    """Clear accepted pairing state when the serial connection closes."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.protocol_mode = ProtocolMode.V2
+    cancel_watchdog = Mock()
+
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.async_call_later",
+        return_value=cancel_watchdog,
+    ):
+        pairing = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING))
+        await asyncio.sleep(0)
+        bridge._process_command_result({"id": 0, "result": "accepted"})
+        await pairing
+        bridge._close_writer()
+
+    cancel_watchdog.assert_called_once_with()
+    assert bridge._pairing_finished.is_set()
+    assert bridge._pairing_request_id is None
+    assert bridge._cancel_pairing_watchdog is None
+    writer.close.assert_called_once_with()
 
 
 def test_future_v2_event_records_activity_without_state_change(
@@ -791,6 +895,36 @@ def test_literal_v2_protocol_contract_messages(hass: HomeAssistant) -> None:
         "radio_reinit": 0,
     }
     assert bridge.last_error == "unknown_command"
+
+
+def test_missing_raw_frame_is_retained_and_validated(hass: HomeAssistant) -> None:
+    """Preserve valid MISSING frame evidence without filtering the bridge ID."""
+    bridge = make_bridge(hass)
+    raw_frame = "d22a384100efa5b813000009407e"
+
+    bridge.async_process_line(
+        '{"type":"event","device":"A5B813","event":"MISSING",'
+        '"base":"MISSING","battery":"MISSING","raw_status":0,'
+        f'"raw_frame":"{raw_frame}"}}'
+    )
+
+    state = bridge.devices["A5B813"]
+    assert state.is_bridge_device
+    assert state.event == "MISSING"
+    assert state.last_raw_frame == raw_frame.upper()
+    assert bridge._stored_status()["A5B813"]["last_raw_frame"] == raw_frame.upper()
+
+    for invalid in ("ABC", "GG", "0xD2", ""):
+        bridge.async_process_line(
+            '{"type":"event","device":"A5B813","event":"MISSING",'
+            f'"raw_frame":"{invalid}"}}'
+        )
+        assert state.last_raw_frame == raw_frame.upper()
+
+    bridge.async_process_line(
+        '{"type":"event","device":"A5B813","event":"SILENCE","raw_status":1}'
+    )
+    assert state.last_raw_frame == raw_frame.upper()
 
 
 async def test_all_v2_command_bytes_match_protocol_contract(

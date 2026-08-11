@@ -32,6 +32,37 @@ jobs:
       - name: Validate with hassfest
         uses: home-assistant/actions/hassfest@master
 
+  firmware:
+    name: Compile Arduino firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: "1.x"
+
+      - name: Install Arduino AVR core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+
+      - name: Compile legacy firmware
+        run: |
+          arduino-cli compile \
+            --fqbn arduino:avr:nano:cpu=atmega328old \
+            --libraries "$GITHUB_WORKSPACE/firmware/Arduino/libraries" \
+            firmware/Arduino/FireAngelNano
+
+      - name: Compile Protocol V2 firmware
+        run: |
+          arduino-cli compile \
+            --fqbn arduino:avr:nano:cpu=atmega328old \
+            --libraries "$GITHUB_WORKSPACE/firmware/Arduino/libraries" \
+            firmware/Arduino/FireAngelNanoV2
+
   quality:
     name: Tests and lint
     runs-on: ubuntu-latest
@@ -63,6 +94,7 @@ jobs:
     needs:
       - hacs
       - hassfest
+      - firmware
       - quality
     runs-on: ubuntu-latest
     steps:

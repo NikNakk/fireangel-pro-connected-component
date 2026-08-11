@@ -39,6 +39,10 @@ async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None
     entry.runtime_data.async_process_line(
         '{"type":"bridge","protocol":2,"firmware":"2.0.0","radio":"ready"}'
     )
+    entry.runtime_data.async_process_line(
+        '{"type":"event","device":"A5B813","event":"MISSING",'
+        '"raw_frame":"D22A384100EFA5B813000009407E"}'
+    )
 
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
 
@@ -46,4 +50,7 @@ async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None
     assert diagnostics["bridge"]["protocol_version"] == 2
     assert diagnostics["bridge"]["firmware_version"] == "2.0.0"
     assert diagnostics["bridge"]["last_activity"] is not None
-    assert diagnostics["bridge"]["last_message"].startswith('{"type":"bridge"')
+    assert diagnostics["bridge"]["last_message"].startswith('{"type":"event"')
+    assert diagnostics["detectors"] == {
+        "A5B813": {"last_raw_frame": "D22A384100EFA5B813000009407E"}
+    }

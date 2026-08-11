@@ -47,9 +47,11 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 _DEVICE_ID_PATTERN = re.compile(r"^[0-9A-F]{6}$")
 _MODEL_PATTERN = re.compile(r"^[0-9A-F]{4}$")
+_RAW_FRAME_PATTERN = re.compile(r"^(?:[0-9A-Fa-f]{2})+$")
 _RECONNECT_DELAY = 10
 _STORAGE_VERSION = 1
 _COMMAND_TIMEOUT = 10
+_PAIRING_WATCHDOG_TIMEOUT = 35
 _ACTIVITY_TIMEOUT = 75
 _V2_TYPES = {"bridge", "heartbeat", "status", "event", "command_result", "error"}
 _V2_EVENTS = {
@@ -84,6 +86,7 @@ class DetectorState:
     last_seen: datetime | None = None
     bridge_device: bool = False
     raw_status: Any | None = None
+    last_raw_frame: str | None = None
 
     @property
     def resolved_device_type(self) -> str:
@@ -139,6 +142,7 @@ class FireAngelBridge:
         self._pairing_request_id: int | None = None
         self._pairing_finished = asyncio.Event()
         self._pairing_finished.set()
+        self._cancel_pairing_watchdog: Callable[[], None] | None = None
         self._cancel_activity_timeout: Callable[[], None] | None = None
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
@@ -169,7 +173,7 @@ class FireAngelBridge:
         for device_id, values in stored.items():
             if (state := self.devices.get(device_id)) is None:
                 continue
-            for key in ("event", "result", "base", "battery"):
+            for key in ("event", "result", "base", "battery", "last_raw_frame"):
                 if key in values:
                     setattr(state, key, values[key])
             if (value := values.get("last_test_pass")) is not None:
@@ -247,6 +251,7 @@ class FireAngelBridge:
 
     def _close_writer(self) -> None:
         """Close the current serial writer."""
+        self._finish_pairing()
         if self._writer is not None:
             self._writer.close()
             self._writer = None
@@ -321,9 +326,39 @@ class FireAngelBridge:
 
     def _finish_pairing(self) -> None:
         """Release commands serialized behind an active pairing operation."""
+        self._cancel_pairing_watchdog_timer()
         self._pairing_active = False
         self._pairing_request_id = None
         self._pairing_finished.set()
+
+    def _start_pairing_watchdog(self) -> None:
+        """Bound the wait for the terminal result after pairing is accepted."""
+        self._cancel_pairing_watchdog_timer()
+        self._cancel_pairing_watchdog = async_call_later(
+            self.hass,
+            _PAIRING_WATCHDOG_TIMEOUT,
+            HassJob(
+                self._pairing_watchdog_expired,
+                "FireAngel pairing terminal-result watchdog",
+                cancel_on_shutdown=True,
+            ),
+        )
+
+    @callback
+    def _pairing_watchdog_expired(self, _now: datetime) -> None:
+        """Release management commands if the terminal pairing result was lost."""
+        self._cancel_pairing_watchdog = None
+        if not self._pairing_active:
+            return
+        self.last_error = "Pairing terminal result was not received"
+        self._finish_pairing()
+        self._notify_update()
+
+    def _cancel_pairing_watchdog_timer(self) -> None:
+        """Cancel a pending terminal pairing-result watchdog."""
+        if self._cancel_pairing_watchdog is not None:
+            self._cancel_pairing_watchdog()
+            self._cancel_pairing_watchdog = None
 
     @property
     def activity_available(self) -> bool:
@@ -402,7 +437,20 @@ class FireAngelBridge:
                     line, self._summarize_v2_message(normalized_type, payload)
                 )
             if normalized_type in _V2_TYPES:
+                protocol = payload.get("protocol")
+                if "protocol" in payload and (
+                    not isinstance(protocol, int)
+                    or isinstance(protocol, bool)
+                    or protocol != 2
+                ):
+                    _LOGGER.debug(
+                        "Ignoring V2 envelope with incompatible protocol: %s",
+                        protocol,
+                    )
+                    self._notify_update()
+                    return
                 self._set_protocol(ProtocolMode.V2)
+                self.protocol_version = 2
                 # A recognized typed message is valid V2 traffic even when a
                 # future enum value is not understood by this integration.
                 self._record_activity(now)
@@ -585,6 +633,12 @@ class FireAngelBridge:
             return False
         self.last_command_result = dict(payload)
         command = self._pending_command_names.get(request_id)
+        if (
+            request_id == self._pairing_request_id
+            and command == COMMAND_PAIRING
+            and status == "accepted"
+        ):
+            self._start_pairing_watchdog()
         if request_id == self._pairing_request_id and status in {
             "paired",
             "unpaired",
@@ -656,6 +710,12 @@ class FireAngelBridge:
                 state.result = None
         if v2 and "raw_status" in fields:
             state.raw_status = fields["raw_status"]
+        if (
+            v2
+            and isinstance(raw_frame := fields.get("raw_frame"), str)
+            and _RAW_FRAME_PATTERN.fullmatch(raw_frame)
+        ):
+            state.last_raw_frame = raw_frame.upper()
         event = str(fields.get("event", "")).strip().upper()
         result = str(fields.get("result", "")).strip().upper()
         if (
@@ -753,7 +813,7 @@ class FireAngelBridge:
         return {
             device_id: {
                 key: value
-                for key in ("event", "result", "base", "battery")
+                for key in ("event", "result", "base", "battery", "last_raw_frame")
                 if (value := getattr(device, key)) is not None
             }
             | (

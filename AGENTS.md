@@ -3,13 +3,12 @@
 ## Project scope
 
 This repository contains the `fireangel_pro_connected` custom integration for
-Home Assistant. It talks locally over USB serial to the Arduino firmware from
-the maintained
-[NikNakk WiSafe2-to-HomeAssistant Bridge fork](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge),
-which contains the bug-fixed legacy image in `Arduino/`, the structured V2
-image in `Arduino-V2/`, and the authoritative
-[Protocol 2 specification](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/blob/master/docs/serial-protocol-v2.md).
-That fork is based on the
+Home Assistant and its locally connected Arduino bridge firmware. The bundled
+`firmware/Arduino/FireAngelNano/` is the maintained legacy implementation,
+`firmware/Arduino/FireAngelNanoV2/` is the structured V2 implementation,
+`firmware/Arduino/libraries/WiSafeRadioCore/` is their shared radio core, and
+`firmware/docs/serial-protocol-v2.md` is the authoritative Protocol 2
+specification. The firmware is based on the
 [original C19HOP project](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge),
 whose legacy firmware remains a supported compatibility target.
 Keep the integration local-only; do not introduce a cloud dependency.
@@ -38,9 +37,9 @@ and documentation.
 ## Bridge protocols
 
 All supported firmware normally uses `115200` baud and emits one record per
-line. The maintained legacy reference is the NikNakk fork's bug-fixed
-`Arduino/` image; the original C19HOP legacy image remains supported. Legacy
-JSON records may contain:
+line. The maintained legacy reference is the bundled bug-fixed
+`firmware/Arduino/FireAngelNano/` image; the original C19HOP legacy image
+remains supported. Legacy JSON records may contain:
 
 - `heartBeat`: bridge heartbeat counter.
 - `device`: six hexadecimal digits identifying a detector.
@@ -65,11 +64,12 @@ can always be inferred automatically. Preserve the manual detector-type option
 so heat alarms can receive Home Assistant's heat device class. CO can be
 inferred from a CO event or the known `7803` model code.
 
-Protocol 2 is defined by the NikNakk fork's `docs/serial-protocol-v2.md`; inspect
-that document and `Arduino-V2/FireAngelNanoV2.ino` before changing V2 parsing or
-command encoding. V2 commands are compact JSON objects containing `command` and
-an optional unsigned 16-bit `id`; `type` is used for firmware-to-host messages
-and must not be added to host-to-firmware command objects.
+Protocol 2 is defined by `firmware/docs/serial-protocol-v2.md`; inspect that
+document and `firmware/Arduino/FireAngelNanoV2/FireAngelNanoV2.ino` before
+changing V2 parsing or command encoding. V2 commands are compact JSON objects
+containing `command` and an optional unsigned 16-bit `id`; `type` is used for
+firmware-to-host messages and must not be added to host-to-firmware command
+objects.
 
 The supported outgoing semantic commands and protocol mappings are defined in
 `const.py`. Test, silence, and pairing commands may be exposed. Do not expose firmware
@@ -131,6 +131,11 @@ ruff format --check .
 pytest
 ```
 
+When firmware changes, compile both bundled images for
+`arduino:avr:nano:cpu=atmega328old` with `firmware/Arduino/libraries` available
+through Arduino CLI's `--libraries` option. Both sketch directories match their
+main `.ino` basenames and compile directly. Report flash and SRAM usage.
+
 When changing the devcontainer or Python requirements, also rebuild it:
 
 ```sh
@@ -144,12 +149,15 @@ registration. Tests for outgoing commands must assert the exact bytes written.
 Use mocks for the serial reader/writer; never depend on `/dev/ttyUSB0` existing
 in CI.
 
-If behavior depends on firmware details, inspect the current NikNakk fork
-rather than guessing. Treat its `Arduino/` image as authoritative for maintained
-legacy behavior and its V2 protocol document and Arduino-V2 parser as
-authoritative for Protocol 2. Inspect the original C19HOP source when verifying
-backward compatibility, and document any remaining protocol inference in the
-change.
+If behavior depends on firmware details, inspect the bundled firmware rather
+than guessing. Treat `firmware/Arduino/FireAngelNano/` as authoritative for
+maintained legacy behavior and the bundled V2 protocol document and
+`FireAngelNanoV2` parser as authoritative for Protocol 2. Inspect the original
+C19HOP source when verifying backward compatibility, and document any remaining
+protocol inference in the change.
+
+Keep firmware sources and build-only files outside `custom_components/`; HACS
+must install only the runtime integration.
 
 ## Changelog
 
