@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.12] - 2026-08-11
+
 ### Added
 
 - Added passive runtime detection and full command/event support for the
@@ -180,7 +182,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...HEAD
+[0.1.0-beta.12]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...v0.1.0-beta.12
 [0.1.0-beta.11]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.10...v0.1.0-beta.11
 [0.1.0-beta.10]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.9...v0.1.0-beta.10
 [0.1.0-beta.9]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.8...v0.1.0-beta.9
