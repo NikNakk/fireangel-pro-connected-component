@@ -34,8 +34,8 @@ class FireAngelBridgeEntity(Entity):
 
     @property
     def available(self) -> bool:
-        """Return whether the serial bridge is connected."""
-        return self.bridge.connected
+        """Return whether the serial bridge has recent recognized activity."""
+        return self.bridge.activity_available
 
     async def async_added_to_hass(self) -> None:
         """Subscribe to bridge updates."""
@@ -61,8 +61,8 @@ class FireAngelDetectorEntity(Entity):
 
     @property
     def available(self) -> bool:
-        """Return whether the serial bridge is connected."""
-        return self.bridge.connected
+        """Return whether the serial bridge has recent recognized activity."""
+        return self.bridge.activity_available
 
     @property
     def device_info(self) -> DeviceInfo:

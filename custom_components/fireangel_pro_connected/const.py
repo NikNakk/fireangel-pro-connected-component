@@ -1,5 +1,6 @@
 """Constants for the FireAngel Pro Connected integration."""
 
+from enum import StrEnum
 from typing import Final
 
 DOMAIN: Final = "fireangel_pro_connected"
@@ -29,13 +30,32 @@ DEVICE_TYPES: Final = (
     DEVICE_TYPE_CO,
 )
 
-COMMAND_TEST_CO: Final = b"1~"
-COMMAND_TEST_FIRE: Final = b"2~"
-COMMAND_TEST_ALL: Final = b"3~"
-COMMAND_SILENCE_CO: Final = b"6~"
-COMMAND_SILENCE_FIRE: Final = b"7~"
-COMMAND_GET_PAIRING: Final = b"8~"
-COMMAND_START_PAIRING: Final = b"9~"
+
+class ProtocolMode(StrEnum):
+    """Wire protocol detected on the current serial connection."""
+
+    UNKNOWN = "unknown"
+    LEGACY = "legacy"
+    V2 = "v2"
+
+
+COMMAND_SOUND_CO: Final = "sound_co"
+COMMAND_SOUND_FIRE: Final = "sound_fire"
+COMMAND_SOUND_COMBINED: Final = "sound_combined"
+COMMAND_SILENCE_CO: Final = "silence_co"
+COMMAND_SILENCE_FIRE: Final = "silence_fire"
+COMMAND_PAIRING_STATE: Final = "pairing_state"
+COMMAND_PAIRING: Final = "pairing"
+
+LEGACY_COMMANDS: Final = {
+    COMMAND_SOUND_CO: b"1~",
+    COMMAND_SOUND_FIRE: b"2~",
+    COMMAND_SOUND_COMBINED: b"3~",
+    COMMAND_SILENCE_CO: b"6~",
+    COMMAND_SILENCE_FIRE: b"7~",
+    COMMAND_PAIRING_STATE: b"8~",
+    COMMAND_PAIRING: b"9~",
+}
 
 MODEL_NAMES: Final = {
     "ED08": "FP2620W2",

@@ -5,20 +5,26 @@ A custom Home Assistant integration for the
 It communicates directly with the Arduino over USB serial; no cloud service is
 involved.
 
-The integration reads the bridge's JSON messages, automatically creates a Home
+The integration passively detects and reads the original and improved legacy
+firmware as well as the structured Protocol 2 firmware in `Arduino-V2/`. It
+sends no negotiation probe, automatically creates a Home
 Assistant device for each unfamiliar six-digit detector ID, and keeps its
 alarm, battery, base, event, model, and last-seen state up to date. Devices can
 then be renamed and assigned to areas through the normal Home Assistant device
 page.
 
 Each detector also has a **Last successful test** timestamp sensor. It is empty
-until the bridge reports a test event (including `FIRE TEST`) with a `PASS`
-result, and its value is retained across Home Assistant restarts.
+until that physical detector reports a test event (including `FIRE TEST`) with
+a `PASS` result, and its value is retained across Home Assistant restarts.
 Alarm, event, and test information reported by the bridge's own WiSafe2
 interface is grouped with the serial bridge device instead of appearing as a
 separate detector.
 
-It also provides bridge buttons for fire/CO tests, silencing, and pairing. The
+It also provides bridge buttons for sounding fire/CO test signals, silencing,
+and pairing. Command acceptance only confirms that the bridge transmitted the
+radio request; it does not prove that any detector received it or passed a
+physical test. Command buttons remain unavailable until the firmware protocol
+has been identified from incoming traffic. The
 firmware's emergency simulation commands are intentionally not exposed as
 buttons to reduce the risk of an accidental network-wide alarm.
 
@@ -63,7 +69,8 @@ directory in your Home Assistant configuration, then restart Home Assistant.
    **Settings → Devices & services**.
 3. Enter the Arduino path shown by Home Assistant's hardware page. Prefer a
    stable `/dev/serial/by-id/...` path. Keep the default baud rate of `115200`
-   for the upstream firmware.
+   for all supported firmware images. The integration identifies legacy or
+   Protocol 2 traffic automatically, including after reconnection.
 
 The integration remembers detectors after their first message. A newly
 discovered detector appears as a device named `FireAngel A1B2C3`; rename it and

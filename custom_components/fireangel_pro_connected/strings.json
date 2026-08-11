@@ -82,9 +82,9 @@
       "silence_co": {"name": "Silence carbon monoxide alarms"},
       "silence_fire": {"name": "Silence fire alarms"},
       "start_pairing": {"name": "Start pairing"},
-      "test_all": {"name": "Test all alarms"},
-      "test_co": {"name": "Test carbon monoxide alarms"},
-      "test_fire": {"name": "Test fire alarms"}
+      "test_all": {"name": "Sound combined test signal"},
+      "test_co": {"name": "Sound carbon monoxide test signal"},
+      "test_fire": {"name": "Sound fire test signal"}
     },
     "sensor": {
       "bridge_message": {"name": "Last message"},

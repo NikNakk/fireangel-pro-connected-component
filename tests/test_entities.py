@@ -32,6 +32,7 @@ from custom_components.fireangel_pro_connected.const import (
     DEVICE_TYPE_HEAT,
     DEVICE_TYPE_SMOKE,
     DOMAIN,
+    ProtocolMode,
 )
 from custom_components.fireangel_pro_connected.sensor import (
     FireAngelBridgeMessageSensor,
@@ -58,6 +59,7 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     assert connection.available and not connection.is_on
     assert message.native_value is None
     bridge.connected, bridge.last_message = True, "READY"
+    bridge.last_activity = datetime.now(UTC)
     assert connection.is_on and message.available and message.native_value == "READY"
 
     message.hass = hass
@@ -67,8 +69,14 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
 
     message.async_write_ha_state.assert_called_once_with()
 
+    button = FireAngelCommandButton(entry, BUTTONS[0])
+    bridge.last_activity = None
+    assert not button.available
+    bridge.protocol_mode = ProtocolMode.LEGACY
+    bridge.last_activity = datetime.now(UTC)
+    assert button.available
     bridge.async_send_command = AsyncMock()
-    await FireAngelCommandButton(entry, BUTTONS[0]).async_press()
+    await button.async_press()
     bridge.async_send_command.assert_awaited_once_with(BUTTONS[0].command)
 
     state = bridge.devices["A1B2C3"]

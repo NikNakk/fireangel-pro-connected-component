@@ -3,6 +3,7 @@
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
 from custom_components.fireangel_pro_connected.const import (
     CONF_BAUD_RATE,
     CONF_DEVICES,
@@ -26,3 +27,22 @@ async def test_diagnostics_include_config_entry_data(hass: HomeAssistant) -> Non
 
     assert diagnostics["entry"]["data"] == entry.data
     assert diagnostics["entry"]["options"] == entry.options
+
+
+async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None:
+    """Test detected firmware details are included in diagnostics."""
+    entry = MockConfigEntry(
+        domain="fireangel_pro_connected", data={CONF_PORT: "/dev/ttyUSB0"}
+    )
+    entry.add_to_hass(hass)
+    entry.runtime_data = FireAngelBridge(hass, entry)
+    entry.runtime_data.async_process_line(
+        '{"type":"bridge","protocol":2,"firmware":"2.0.0","radio":"ready"}'
+    )
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert diagnostics["bridge"]["protocol_mode"] == "v2"
+    assert diagnostics["bridge"]["protocol_version"] == 2
+    assert diagnostics["bridge"]["firmware_version"] == "2.0.0"
+    assert diagnostics["bridge"]["last_activity"] is not None

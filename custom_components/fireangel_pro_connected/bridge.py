@@ -13,13 +13,16 @@ from typing import Any
 
 import serial_asyncio_fast
 from homeassistant.config_entries import ConfigEntryNotReady
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HassJob, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from serial import SerialException
 
 from .const import (
+    COMMAND_PAIRING,
+    COMMAND_PAIRING_STATE,
     CONF_BAUD_RATE,
     CONF_BRIDGE_DEVICE_ID,
     CONF_DEVICE_ID,
@@ -35,8 +38,10 @@ from .const import (
     DEVICE_TYPE_CO,
     DEVICE_TYPE_SMOKE,
     DOMAIN,
+    LEGACY_COMMANDS,
     MODEL_DEVICE_TYPES,
     MODEL_NAMES,
+    ProtocolMode,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,6 +49,20 @@ _DEVICE_ID_PATTERN = re.compile(r"^[0-9A-F]{6}$")
 _MODEL_PATTERN = re.compile(r"^[0-9A-F]{4}$")
 _RECONNECT_DELAY = 10
 _STORAGE_VERSION = 1
+_COMMAND_TIMEOUT = 10
+_ACTIVITY_TIMEOUT = 75
+_V2_TYPES = {"bridge", "heartbeat", "status", "event", "command_result", "error"}
+_V2_EVENTS = {
+    "FIRE_TEST": "FIRE TEST",
+    "CO_TEST": "CARBON MONOXIDE TEST",
+    "TEST": "TEST",
+    "FIRE_EMERGENCY": "FIRE EMERGENCY",
+    "CO_EMERGENCY": "CARBON MONOXIDE EMERGENCY",
+    "EMERGENCY": "EMERGENCY",
+    "STATUS": None,
+    "SILENCE": "SILENCE",
+    "MISSING": "MISSING",
+}
 
 type UpdateCallback = Callable[[], None]
 type NewDeviceCallback = Callable[[str], None]
@@ -64,6 +83,7 @@ class DetectorState:
     last_test_pass: datetime | None = None
     last_seen: datetime | None = None
     bridge_device: bool = False
+    raw_status: Any | None = None
 
     @property
     def resolved_device_type(self) -> str:
@@ -101,6 +121,24 @@ class FireAngelBridge:
         self.connected = False
         self.last_message: str | None = None
         self.last_heartbeat: datetime | None = None
+        self.last_activity: datetime | None = None
+        self.protocol_mode = ProtocolMode.UNKNOWN
+        self.protocol_version: int | None = None
+        self.firmware_version: str | None = None
+        self.radio_state: str | None = None
+        self.bridge_uptime: int | None = None
+        self.diagnostic_counters: dict[str, int] = {}
+        self.last_error: str | None = None
+        self.last_command_result: dict[str, Any] | None = None
+        self._next_request_id = 0
+        self._pending_commands: dict[int, asyncio.Future[dict[str, Any]]] = {}
+        self._pending_command_names: dict[int, str] = {}
+        self._write_lock = asyncio.Lock()
+        self._pairing_active = False
+        self._pairing_request_id: int | None = None
+        self._pairing_finished = asyncio.Event()
+        self._pairing_finished.set()
+        self._cancel_activity_timeout: Callable[[], None] | None = None
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._task: asyncio.Task[None] | None = None
@@ -147,7 +185,7 @@ class FireAngelBridge:
     @staticmethod
     def normalize_model(value: str | None) -> str | None:
         """Normalize and validate a model code."""
-        if not value:
+        if not isinstance(value, str) or not value:
             return None
         normalized = value.strip().replace(":", "").replace("-", "").upper()
         return normalized if _MODEL_PATTERN.fullmatch(normalized) else None
@@ -173,9 +211,12 @@ class FireAngelBridge:
             self._task = None
         self._close_writer()
         self.connected = False
+        self._set_protocol(ProtocolMode.UNKNOWN)
+        self._cancel_activity_timer()
 
     async def _async_connect(self) -> None:
         """Connect to the configured serial port."""
+        self._set_protocol(ProtocolMode.UNKNOWN)
         self._reader, self._writer = await serial_asyncio_fast.open_serial_connection(
             url=self.port,
             baudrate=self.baud_rate,
@@ -209,12 +250,118 @@ class FireAngelBridge:
             self._writer.close()
             self._writer = None
 
-    async def async_send_command(self, command: bytes) -> None:
-        """Send a command to the Arduino bridge."""
+    def _set_protocol(self, mode: ProtocolMode) -> None:
+        """Set a newly detected protocol and cancel incompatible requests."""
+        if mode == self.protocol_mode:
+            return
+        for future in self._pending_commands.values():
+            if not future.done():
+                future.set_exception(SerialException("Bridge protocol changed"))
+        self._pending_commands.clear()
+        self._pending_command_names.clear()
+        self._finish_pairing()
+        self.protocol_mode = mode
+        if mode != ProtocolMode.V2:
+            self.protocol_version = None
+            self.firmware_version = None
+            self.radio_state = None
+            self.bridge_uptime = None
+            self.diagnostic_counters = {}
+
+    async def async_send_command(self, command: str) -> dict[str, Any] | None:
+        """Encode and send a semantic command for the detected protocol."""
         if not self.connected or self._writer is None:
             raise SerialException("FireAngel bridge is not connected")
-        self._writer.write(command)
-        await self._writer.drain()
+        if self.protocol_mode == ProtocolMode.UNKNOWN:
+            raise SerialException("Waiting for firmware identification")
+        if command not in LEGACY_COMMANDS:
+            raise ValueError(f"Unsupported FireAngel command: {command}")
+        request_id: int | None = None
+        future: asyncio.Future[dict[str, Any]] | None = None
+        try:
+            async with self._write_lock:
+                await self._pairing_finished.wait()
+                if not self.connected or self._writer is None:
+                    raise SerialException("FireAngel bridge is not connected")
+                if self.protocol_mode == ProtocolMode.LEGACY:
+                    self._writer.write(LEGACY_COMMANDS[command])
+                    await self._writer.drain()
+                    if command == COMMAND_PAIRING:
+                        self._start_pairing()
+                    return None
+
+                request_id = self._allocate_request_id()
+                future = asyncio.get_running_loop().create_future()
+                self._pending_commands[request_id] = future
+                self._pending_command_names[request_id] = command
+                encoded = (
+                    json.dumps(
+                        {"type": "command", "id": request_id, "command": command},
+                        separators=(",", ":"),
+                    ).encode()
+                    + b"\n"
+                )
+                self._writer.write(encoded)
+                await self._writer.drain()
+                if command == COMMAND_PAIRING:
+                    self._start_pairing(request_id)
+            assert future is not None
+            return await asyncio.wait_for(future, _COMMAND_TIMEOUT)
+        finally:
+            if request_id is not None:
+                self._pending_commands.pop(request_id, None)
+                self._pending_command_names.pop(request_id, None)
+
+    def _start_pairing(self, request_id: int | None = None) -> None:
+        """Prevent further management writes until pairing finishes."""
+        self._pairing_active = True
+        self._pairing_request_id = request_id
+        self._pairing_finished.clear()
+
+    def _finish_pairing(self) -> None:
+        """Release commands serialized behind an active pairing operation."""
+        self._pairing_active = False
+        self._pairing_request_id = None
+        self._pairing_finished.set()
+
+    @property
+    def activity_available(self) -> bool:
+        """Return whether recent recognized traffic confirms bridge activity."""
+        return (
+            self.connected
+            and self.last_activity is not None
+            and (dt_util.utcnow() - self.last_activity).total_seconds()
+            <= _ACTIVITY_TIMEOUT
+        )
+
+    def _record_activity(self, now: datetime) -> None:
+        """Record traffic and arrange an entity refresh when it becomes stale."""
+        self.last_activity = now
+        self._cancel_activity_timer()
+        self._cancel_activity_timeout = async_call_later(
+            self.hass,
+            _ACTIVITY_TIMEOUT,
+            HassJob(
+                lambda _now: self._notify_update(),
+                "FireAngel activity availability timeout",
+                cancel_on_shutdown=True,
+            ),
+        )
+
+    def _cancel_activity_timer(self) -> None:
+        """Cancel the current activity-expiry refresh."""
+        if self._cancel_activity_timeout is not None:
+            self._cancel_activity_timeout()
+            self._cancel_activity_timeout = None
+
+    def _allocate_request_id(self) -> int:
+        """Allocate an unused 16-bit V2 request ID."""
+        for _ in range(65536):
+            request_id = self._next_request_id
+            self._next_request_id = (request_id + 1) % 65536
+            if request_id not in self._pending_commands:
+                return request_id
+        raise SerialException("No command request IDs available")
 
     @callback
     def async_process_line(self, line: str) -> None:
@@ -228,11 +375,30 @@ class FireAngelBridge:
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
+            if self._is_legacy_text(line):
+                self._set_protocol(ProtocolMode.LEGACY)
+                self._record_activity(now)
+                upper = line.upper()
+                if upper == "CMD BUSY":
+                    self.last_error = "CMD BUSY"
+                elif upper in {"NETWORK PAIRED", "NETWORK UNPAIRED"}:
+                    self._finish_pairing()
             self._notify_update()
             return
 
         if not isinstance(payload, dict):
             self._notify_update()
+            return
+
+        message_type = payload.get("type")
+        if isinstance(message_type, str):
+            normalized_type = message_type.casefold()
+            if normalized_type in _V2_TYPES:
+                self._set_protocol(ProtocolMode.V2)
+                self._process_v2(normalized_type, payload, now)
+            else:
+                _LOGGER.debug("Ignoring unknown V2 message type: %s", message_type)
+                self._notify_update()
             return
 
         # Firmware variants differ in the capitalization of JSON field names
@@ -245,7 +411,9 @@ class FireAngelBridge:
         }
 
         if "heartbeat" in fields:
+            self._set_protocol(ProtocolMode.LEGACY)
             self.last_heartbeat = now
+            self._record_activity(now)
             self._notify_update()
             return
 
@@ -253,6 +421,127 @@ class FireAngelBridge:
         if device_id is None:
             self._notify_update()
             return
+        self._set_protocol(ProtocolMode.LEGACY)
+        self._update_detector(fields, now, v2=False)
+
+    @staticmethod
+    def _is_legacy_text(line: str) -> bool:
+        """Recognize established legacy startup and command responses."""
+        upper = line.upper()
+        return upper.startswith("INIT ") or upper in {
+            "INIT OK",
+            "CMD BUSY",
+            "NETWORK PAIRED",
+            "NETWORK UNPAIRED",
+        }
+
+    @callback
+    def _process_v2(
+        self, message_type: str, payload: dict[str, Any], now: datetime
+    ) -> None:
+        """Validate and dispatch a typed protocol-2 message."""
+        if message_type == "bridge":
+            if payload.get("protocol") == 2:
+                self.protocol_version = 2
+                self._record_activity(now)
+            if isinstance(payload.get("firmware"), str):
+                self.firmware_version = payload["firmware"]
+            if isinstance(payload.get("radio"), str):
+                self.radio_state = payload["radio"]
+        elif message_type in {"heartbeat", "status"}:
+            self._record_activity(now)
+            if message_type == "heartbeat":
+                self.last_heartbeat = now
+            if isinstance(payload.get("uptime"), int):
+                self.bridge_uptime = payload["uptime"]
+            if isinstance(payload.get("radio"), str):
+                self.radio_state = payload["radio"]
+            if isinstance(payload.get("firmware"), str):
+                self.firmware_version = payload["firmware"]
+            counters = payload.get("counters")
+            if isinstance(counters, dict):
+                self.diagnostic_counters.update(
+                    {
+                        key: value
+                        for key, value in counters.items()
+                        if isinstance(key, str)
+                        and isinstance(value, int)
+                        and not isinstance(value, bool)
+                    }
+                )
+        elif message_type == "event":
+            self._process_v2_event(payload, now)
+            return
+        elif message_type == "command_result":
+            if self._process_command_result(payload):
+                self._record_activity(now)
+        elif message_type == "error":
+            self.last_error = str(
+                payload.get("message", payload.get("error", "Unknown error"))
+            )
+            self._record_activity(now)
+            request_id = payload.get("id")
+            if (
+                isinstance(request_id, int)
+                and (future := self._pending_commands.get(request_id)) is not None
+                and not future.done()
+            ):
+                future.set_exception(SerialException(self.last_error))
+                if request_id == self._pairing_request_id:
+                    self._finish_pairing()
+        self._notify_update()
+
+    def _process_v2_event(self, payload: dict[str, Any], now: datetime) -> None:
+        """Normalize a V2 detector event into the shared state path."""
+        device_id = self.normalize_device_id(str(payload.get("device", "")))
+        event = payload.get("event")
+        if device_id is None or not isinstance(event, str):
+            self._notify_update()
+            return
+        event_name = event.upper()
+        if event_name not in _V2_EVENTS:
+            self._notify_update()
+            return
+        self._record_activity(now)
+        fields = dict(payload)
+        normalized_event = _V2_EVENTS[event_name]
+        if normalized_event is None:
+            fields.pop("event", None)
+        else:
+            fields["event"] = normalized_event
+        self._update_detector(fields, now, v2=True)
+
+    def _process_command_result(self, payload: dict[str, Any]) -> bool:
+        """Record a command result and resolve its matching request."""
+        request_id = payload.get("id")
+        status = payload.get("result", payload.get("status"))
+        if not isinstance(request_id, int) or not isinstance(status, str):
+            return False
+        self.last_command_result = dict(payload)
+        if request_id == self._pairing_request_id and status in {"paired", "unpaired"}:
+            self._finish_pairing()
+        future = self._pending_commands.get(request_id)
+        command = self._pending_command_names.get(request_id)
+        if future is None or future.done():
+            return True
+        if command == COMMAND_PAIRING_STATE:
+            complete = status in {"paired", "unpaired"}
+        else:
+            complete = status in {"accepted", "paired", "unpaired"}
+        if complete:
+            future.set_result(dict(payload))
+        return True
+
+    @callback
+    def _update_detector(
+        self, fields: dict[str, Any], now: datetime, *, v2: bool
+    ) -> None:
+        """Merge normalized wire fields into detector runtime state."""
+        device_id = self.normalize_device_id(str(fields.get("device", "")))
+        if device_id is None:
+            self._notify_update()
+            return
+        self._record_activity(now)
 
         is_new = device_id not in self.devices
         state = self.devices.setdefault(
@@ -265,11 +554,24 @@ class FireAngelBridge:
             inventory_changed = state.model != model
             state.model = model
         for key in ("event", "result", "base", "battery"):
-            if key in fields:
-                setattr(state, key, str(fields[key]).upper())
+            value = fields.get(key)
+            if not isinstance(value, str):
+                continue
+            normalized = value.upper()
+            if v2 and key == "base" and normalized not in {"ON", "OFF", "MISSING"}:
+                continue
+            if v2 and key == "battery" and normalized not in {"OK", "LOW", "MISSING"}:
+                continue
+            setattr(state, key, normalized)
+        if v2 and "raw_status" in fields:
+            state.raw_status = fields["raw_status"]
         event = str(fields.get("event", "")).strip().upper()
         result = str(fields.get("result", "")).strip().upper()
-        if result == "PASS" and (event == "TEST" or event.endswith(" TEST")):
+        if (
+            result == "PASS"
+            and (event == "TEST" or event.endswith(" TEST"))
+            and (v2 or not state.is_bridge_device)
+        ):
             state.last_test_pass = now
         state.last_seen = now
 

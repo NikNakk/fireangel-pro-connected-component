@@ -7,8 +7,26 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added passive runtime detection and full command/event support for the
+  structured Protocol 2 firmware while retaining original and improved legacy
+  firmware support.
+
 ### Changed
 
+- Renamed test command buttons to **Sound … test signal** and clarified that
+  command acceptance is not evidence of detector receipt or a successful
+  physical detector test. Bridge-generated legacy `PASS` actions no longer
+  update detector test timestamps.
+- Extended diagnostics with detected protocol, firmware/radio state, uptime,
+  command/error details, heartbeat and general activity times, and validated
+  firmware counters. General activity is refreshed by valid traffic because
+  firmware heartbeats are only emitted while the bridge is otherwise idle.
+- Based entity availability on recognized activity within 75 seconds and
+  serialized management commands while pairing is active for both protocols.
+  Correlated V2 busy errors and legacy `CMD BUSY` responses remain diagnostic
+  command outcomes.
 - Simplified diagnostics output now that the integration stores no credentials
   or tokens requiring redaction.
 

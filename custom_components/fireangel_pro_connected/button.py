@@ -10,13 +10,14 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
 from .const import (
-    COMMAND_GET_PAIRING,
+    COMMAND_PAIRING,
+    COMMAND_PAIRING_STATE,
     COMMAND_SILENCE_CO,
     COMMAND_SILENCE_FIRE,
-    COMMAND_START_PAIRING,
-    COMMAND_TEST_ALL,
-    COMMAND_TEST_CO,
-    COMMAND_TEST_FIRE,
+    COMMAND_SOUND_CO,
+    COMMAND_SOUND_COMBINED,
+    COMMAND_SOUND_FIRE,
+    ProtocolMode,
 )
 from .entity import FireAngelBridgeEntity
 
@@ -25,18 +26,18 @@ from .entity import FireAngelBridgeEntity
 class FireAngelButtonDescription(ButtonEntityDescription):
     """Describe a bridge command button."""
 
-    command: bytes
+    command: str
 
 
 BUTTONS = (
     FireAngelButtonDescription(
-        key="test_co", translation_key="test_co", command=COMMAND_TEST_CO
+        key="test_co", translation_key="test_co", command=COMMAND_SOUND_CO
     ),
     FireAngelButtonDescription(
-        key="test_fire", translation_key="test_fire", command=COMMAND_TEST_FIRE
+        key="test_fire", translation_key="test_fire", command=COMMAND_SOUND_FIRE
     ),
     FireAngelButtonDescription(
-        key="test_all", translation_key="test_all", command=COMMAND_TEST_ALL
+        key="test_all", translation_key="test_all", command=COMMAND_SOUND_COMBINED
     ),
     FireAngelButtonDescription(
         key="silence_co", translation_key="silence_co", command=COMMAND_SILENCE_CO
@@ -49,12 +50,12 @@ BUTTONS = (
     FireAngelButtonDescription(
         key="get_pairing",
         translation_key="get_pairing",
-        command=COMMAND_GET_PAIRING,
+        command=COMMAND_PAIRING_STATE,
     ),
     FireAngelButtonDescription(
         key="start_pairing",
         translation_key="start_pairing",
-        command=COMMAND_START_PAIRING,
+        command=COMMAND_PAIRING,
     ),
 )
 
@@ -88,3 +89,8 @@ class FireAngelCommandButton(FireAngelBridgeEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Send the command."""
         await self.bridge.async_send_command(self.entity_description.command)
+
+    @property
+    def available(self) -> bool:
+        """Return whether the bridge connection has identified its firmware."""
+        return super().available and self.bridge.protocol_mode != ProtocolMode.UNKNOWN
