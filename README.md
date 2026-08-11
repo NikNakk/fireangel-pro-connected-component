@@ -1,13 +1,20 @@
 # FireAngel Pro Connected
 
-A custom Home Assistant integration for the
-[C19HOP WiSafe2-to-HomeAssistant Bridge](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge).
+A custom Home Assistant integration for the maintained
+[NikNakk WiSafe2-to-HomeAssistant Bridge fork](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge),
+which is based on the
+[original C19HOP project](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge).
 It communicates directly with the Arduino over USB serial; no cloud service is
 involved.
 
-The integration passively detects and reads the original and improved legacy
-firmware as well as the structured Protocol 2 firmware in `Arduino-V2/`. It
-sends no negotiation probe, automatically creates a Home
+The recommended legacy image is the fork's
+[bug-fixed `Arduino/` firmware](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino).
+The original C19HOP legacy firmware remains supported for existing users. The
+integration also supports the fork's structured
+[Protocol 2 firmware](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino-V2).
+The V2 wire format is documented in the fork's
+[serial protocol specification](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/blob/master/docs/serial-protocol-v2.md).
+The integration sends no negotiation probe and automatically creates a Home
 Assistant device for each unfamiliar six-digit detector ID, and keeps its
 alarm, battery, base, event, model, and last-seen state up to date. Devices can
 then be renamed and assigned to areas through the normal Home Assistant device
@@ -70,7 +77,11 @@ directory in your Home Assistant configuration, then restart Home Assistant.
 3. Enter the Arduino path shown by Home Assistant's hardware page. Prefer a
    stable `/dev/serial/by-id/...` path. Keep the default baud rate of `115200`
    for all supported firmware images. The integration identifies legacy or
-   Protocol 2 traffic automatically, including after reconnection.
+   Protocol 2 traffic automatically, including after reconnection. For current
+   firmware, flash either the fork's
+   [bug-fixed legacy `Arduino/` image](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino)
+   or its
+   [structured `Arduino-V2/` image](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/tree/master/Arduino-V2).
 
 The integration remembers detectors after their first message. A newly
 discovered detector appears as a device named `FireAngel A1B2C3`; rename it and

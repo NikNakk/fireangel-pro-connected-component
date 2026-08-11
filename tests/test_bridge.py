@@ -462,8 +462,8 @@ async def test_unknown_mode_rejected_and_v2_command_correlation(
     second = asyncio.create_task(bridge.async_send_command(COMMAND_PAIRING_STATE))
     await asyncio.sleep(0)
     assert [call.args[0] for call in writer.write.call_args_list] == [
-        b'{"type":"command","id":0,"command":"sound_co"}\n',
-        b'{"type":"command","id":1,"command":"pairing_state"}\n',
+        b'{"command":"sound_co","id":0}\n',
+        b'{"command":"pairing_state","id":1}\n',
     ]
     bridge.async_process_line(
         '{"type":"event","device":"C0FFEE","event":"TEST","result":"PASS"}'
@@ -551,12 +551,13 @@ async def test_v2_commands_wait_for_pairing_and_busy_is_correlated(
     bridge.async_process_line('{"type":"command_result","id":0,"result":"paired"}')
     await asyncio.sleep(0)
     assert writer.write.call_args_list[-1].args[0] == (
-        b'{"type":"command","id":1,"command":"sound_co"}\n'
+        b'{"command":"sound_co","id":1}\n'
     )
-    bridge.async_process_line('{"type":"error","id":1,"error":"busy"}')
+    bridge.async_process_line('{"type":"error","id":1,"code":"busy"}')
     with pytest.raises(SerialException, match="busy"):
         await queued
     assert bridge.last_error == "busy"
+    assert bridge.last_message_summary == "Error · busy"
 
 
 def test_activity_availability_uses_75_second_timeout(hass: HomeAssistant) -> None:

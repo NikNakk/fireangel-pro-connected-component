@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.15] - 2026-08-11
+
+### Fixed
+
+- Matched the V2 firmware's outbound command schema by omitting the inbound-only
+  `type` field, fixing `malformed_command` failures for pairing checks and all
+  other V2 commands. Firmware error `code` values are now surfaced correctly.
+
+### Changed
+
+- Documented the maintained NikNakk firmware fork as the recommended source for
+  its bug-fixed legacy image and Protocol 2 image, while retaining attribution
+  and compatibility references to the original C19HOP project.
+
 ## [0.1.0-beta.14] - 2026-08-11
 
 ### Fixed
@@ -208,7 +222,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.14...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.15...HEAD
+[0.1.0-beta.15]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.14...v0.1.0-beta.15
 [0.1.0-beta.14]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...v0.1.0-beta.14
 [0.1.0-beta.13]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.12...v0.1.0-beta.13
 [0.1.0-beta.12]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.11...v0.1.0-beta.12

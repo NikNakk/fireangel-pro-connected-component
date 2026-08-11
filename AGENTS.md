@@ -4,7 +4,14 @@
 
 This repository contains the `fireangel_pro_connected` custom integration for
 Home Assistant. It talks locally over USB serial to the Arduino firmware from
-the [C19HOP WiSafe2-to-HomeAssistant Bridge](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge).
+the maintained
+[NikNakk WiSafe2-to-HomeAssistant Bridge fork](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge),
+which contains the bug-fixed legacy image in `Arduino/`, the structured V2
+image in `Arduino-V2/`, and the authoritative
+[Protocol 2 specification](https://github.com/NikNakk/WiSafe2-to-HomeAssistant-Bridge/blob/master/docs/serial-protocol-v2.md).
+That fork is based on the
+[original C19HOP project](https://github.com/C19HOP/WiSafe2-to-HomeAssistant-Bridge),
+whose legacy firmware remains a supported compatibility target.
 Keep the integration local-only; do not introduce a cloud dependency.
 
 The integration supplements the alarms' native interlink behavior. It is not
@@ -28,10 +35,12 @@ and documentation.
 - Tests use `pytest-homeassistant-custom-component` and must not require real
   serial hardware.
 
-## Bridge protocol
+## Bridge protocols
 
-The upstream firmware normally uses `115200` baud and emits one record per
-line. JSON records may contain:
+All supported firmware normally uses `115200` baud and emits one record per
+line. The maintained legacy reference is the NikNakk fork's bug-fixed
+`Arduino/` image; the original C19HOP legacy image remains supported. Legacy
+JSON records may contain:
 
 - `heartBeat`: bridge heartbeat counter.
 - `device`: six hexadecimal digits identifying a detector.
@@ -51,13 +60,19 @@ Normalize detector IDs to uppercase six-digit hex and model codes to uppercase
 four-digit hex. Do not hardcode household detector IDs. Synthetic IDs such as
 `A1B2C3` are suitable for tests and examples.
 
-The firmware collapses smoke and heat events into `FIRE`. Do not claim those
+The legacy firmware collapses smoke and heat events into `FIRE`. Do not claim those
 can always be inferred automatically. Preserve the manual detector-type option
 so heat alarms can receive Home Assistant's heat device class. CO can be
 inferred from a CO event or the known `7803` model code.
 
-The supported outgoing commands are defined as byte constants in `const.py`.
-Test, silence, and pairing commands may be exposed. Do not expose firmware
+Protocol 2 is defined by the NikNakk fork's `docs/serial-protocol-v2.md`; inspect
+that document and `Arduino-V2/FireAngelNanoV2.ino` before changing V2 parsing or
+command encoding. V2 commands are compact JSON objects containing `command` and
+an optional unsigned 16-bit `id`; `type` is used for firmware-to-host messages
+and must not be added to host-to-firmware command objects.
+
+The supported outgoing semantic commands and protocol mappings are defined in
+`const.py`. Test, silence, and pairing commands may be exposed. Do not expose firmware
 emergency-simulation commands as routine buttons or services without an
 explicit user request, a strong warning, and safeguards against accidental
 activation.
@@ -129,8 +144,12 @@ registration. Tests for outgoing commands must assert the exact bytes written.
 Use mocks for the serial reader/writer; never depend on `/dev/ttyUSB0` existing
 in CI.
 
-If behavior depends on upstream firmware details, inspect the current upstream
-source rather than guessing, and document any protocol inference in the change.
+If behavior depends on firmware details, inspect the current NikNakk fork
+rather than guessing. Treat its `Arduino/` image as authoritative for maintained
+legacy behavior and its V2 protocol document and Arduino-V2 parser as
+authoritative for Protocol 2. Inspect the original C19HOP source when verifying
+backward compatibility, and document any remaining protocol inference in the
+change.
 
 ## Changelog
 

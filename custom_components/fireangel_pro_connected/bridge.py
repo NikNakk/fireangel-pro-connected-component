@@ -297,7 +297,7 @@ class FireAngelBridge:
                 self._pending_command_names[request_id] = command
                 encoded = (
                     json.dumps(
-                        {"type": "command", "id": request_id, "command": command},
+                        {"command": command, "id": request_id},
                         separators=(",", ":"),
                     ).encode()
                     + b"\n"
@@ -471,7 +471,7 @@ class FireAngelBridge:
             result = payload.get("result", payload.get("status"))
             return f"{label} · {result.title()}" if isinstance(result, str) else label
         if message_type == "error":
-            error = payload.get("message", payload.get("error"))
+            error = payload.get("code", payload.get("message", payload.get("error")))
             return f"Error · {error}" if isinstance(error, str) else "Error"
         return f"Unrecognized message · {message_type}"
 
@@ -543,7 +543,10 @@ class FireAngelBridge:
                 self._record_activity(now)
         elif message_type == "error":
             self.last_error = str(
-                payload.get("message", payload.get("error", "Unknown error"))
+                payload.get(
+                    "code",
+                    payload.get("message", payload.get("error", "Unknown error")),
+                )
             )
             self._record_activity(now)
             request_id = payload.get("id")
