@@ -49,13 +49,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Stage tagged firmware and app sources
-        run: python3 scripts/stage_addon_build.py /tmp/wisafe2-addon-context
+        run: python3 scripts/stage_app_build.py /tmp/wisafe2-app-context
       - name: Build and publish architecture image
         uses: home-assistant/builder/actions/build-image@2026.06.0
         with:
           arch: ${{ matrix.arch }}
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
-          context: /tmp/wisafe2-addon-context
+          context: /tmp/wisafe2-app-context
           image: ${{ matrix.image }}
           image-tags: ${{ needs.init.outputs.version }}
           push: "true"

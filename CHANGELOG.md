@@ -7,6 +7,19 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-12
+
+### Added
+
+- Added an app-store icon matching the FireAngel Pro Connected integration.
+
+### Changed
+
+- Adopted current Home Assistant **app** terminology throughout documentation,
+  workflows, build tooling, and code comments.
+- Promoted the integration and WiSafe2 Firmware Updater app from beta to the
+  first stable release.
+
 ## [0.1.0-beta.23] - 2026-08-12
 
 ### Fixed
@@ -310,7 +323,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...v0.1.0
 [0.1.0-beta.23]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...v0.1.0-beta.23
 [0.1.0-beta.22]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...v0.1.0-beta.22
 [0.1.0-beta.21]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...v0.1.0-beta.21

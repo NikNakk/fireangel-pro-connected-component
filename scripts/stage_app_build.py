@@ -1,4 +1,4 @@
-"""Create the add-on Docker context from the repository's firmware source."""
+"""Create the app Docker context from the repository's firmware source."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from pathlib import Path
 
 
 def stage(repository: Path, destination: Path) -> None:
-    """Build a clean context containing add-on code and release firmware."""
-    addon = repository / "wisafe2_firmware"
+    """Build a clean context containing app code and release firmware."""
+    app = repository / "wisafe2_firmware"
     destination.mkdir(parents=True, exist_ok=False)
     for name in ("Dockerfile", "app"):
-        source = addon / name
+        source = app / name
         target = destination / name
         shutil.copytree(source, target) if source.is_dir() else shutil.copy2(
             source, target

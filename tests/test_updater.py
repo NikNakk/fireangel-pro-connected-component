@@ -59,7 +59,7 @@ def test_compile_does_not_call_home_assistant(tmp_path: Path) -> None:
 
 
 def test_command_supplies_home_when_supervisor_omits_it() -> None:
-    """Arduino CLI receives a writable home in the add-on runtime."""
+    """Arduino CLI receives a writable home in the app runtime."""
     from wisafe2_firmware.app.updater import run_command
 
     with (

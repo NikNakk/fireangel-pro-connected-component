@@ -98,7 +98,7 @@ def resolve_serial_device(
 
 
 def run_command(command: list[str]) -> None:
-    """Run one tool command with output streamed to the add-on log."""
+    """Run one tool command with output streamed to the app log."""
     environment = os.environ.copy()
     environment.setdefault("HOME", "/data")
     subprocess.run(command, check=True, env=environment)
@@ -205,7 +205,7 @@ def flash_firmware(
 
 
 def main() -> int:
-    """Execute the configured one-shot add-on action."""
+    """Execute the configured one-shot app action."""
     options = json.loads(OPTIONS_PATH.read_text())
     action = options.get("action", "compile")
     source = options.get("source", "v2")

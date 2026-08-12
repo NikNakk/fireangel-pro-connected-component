@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 - 2026-08-12
+
+- Added an app-store icon matching the integration.
+- Adopted current Home Assistant app terminology.
+- Published the first stable WiSafe2 Firmware Updater app release.
+
 ## 0.1.0-beta.23 - 2026-08-12
 
 - Preserved Supervisor-injected environment variables through the s6-overlay

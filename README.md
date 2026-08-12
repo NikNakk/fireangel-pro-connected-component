@@ -7,7 +7,7 @@ It communicates directly with the Arduino over USB serial; no cloud service is
 involved.
 
 This repository also contains an optional Home Assistant OS **WiSafe2 Firmware
-Updater** app (formerly called an add-on). It compiles and flashes the bundled
+Updater** app. It compiles and flashes the bundled
 Arduino firmware while coordinating temporary serial-port maintenance with the
 integration. The updater is separate from the HACS-installed integration.
 
