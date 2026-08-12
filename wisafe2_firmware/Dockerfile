@@ -12,9 +12,15 @@ RUN apk add --no-cache python3 py3-pyserial ca-certificates curl tar \
        esac \
     && curl -fsSL "https://downloads.arduino.cc/arduino-cli/arduino-cli_${ARDUINO_CLI_VERSION}_Linux_${cli_arch}.tar.gz" \
       | tar -xz -C /usr/local/bin arduino-cli \
-    && arduino-cli config init --overwrite \
-    && arduino-cli core update-index \
-    && arduino-cli core install arduino:avr@1.8.6
+    && mkdir -p /opt/wisafe2/arduino-data /opt/wisafe2/arduino-downloads /opt/wisafe2/arduino-user \
+    && arduino-cli config init --overwrite --dest-dir /opt/wisafe2 \
+    && arduino-cli config set directories.data /opt/wisafe2/arduino-data --config-file /opt/wisafe2/arduino-cli.yaml \
+    && arduino-cli config set directories.downloads /opt/wisafe2/arduino-downloads --config-file /opt/wisafe2/arduino-cli.yaml \
+    && arduino-cli config set directories.user /opt/wisafe2/arduino-user --config-file /opt/wisafe2/arduino-cli.yaml \
+    && arduino-cli core update-index --config-file /opt/wisafe2/arduino-cli.yaml \
+    && arduino-cli core install arduino:avr@1.8.6 --config-file /opt/wisafe2/arduino-cli.yaml \
+    && arduino-cli core list --config-file /opt/wisafe2/arduino-cli.yaml \
+      | grep -F "arduino:avr"
 
 COPY app /opt/wisafe2/app
 COPY firmware/Arduino /opt/wisafe2/firmware/Arduino

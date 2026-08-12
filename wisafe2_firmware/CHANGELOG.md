@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.21 - 2026-08-12
+
+- Made Arduino CLI use the same explicit configuration and package directory at
+  image-build and runtime, preserving the installed AVR core for compilation.
+
 ## 0.1.0-beta.20 - 2026-08-12
 
 - Forced generated GHCR image names to use the lowercase `niknakk` namespace.

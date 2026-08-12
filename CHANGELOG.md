@@ -7,6 +7,14 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.21] - 2026-08-12
+
+### Fixed
+
+- Stored the pinned Arduino AVR platform in an explicit image directory and
+  made every runtime Arduino CLI command use the same configuration file,
+  preventing compile actions from losing the build-time core installation.
+
 ## [0.1.0-beta.20] - 2026-08-12
 
 ### Fixed
@@ -286,7 +294,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...HEAD
+[0.1.0-beta.21]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...v0.1.0-beta.21
 [0.1.0-beta.20]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...v0.1.0-beta.20
 [0.1.0-beta.19]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...v0.1.0-beta.19
 [0.1.0-beta.18]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.17...v0.1.0-beta.18

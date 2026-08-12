@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 FQBN = "arduino:avr:nano:cpu=atmega328old"
+ARDUINO_CONFIG = Path("/opt/wisafe2/arduino-cli.yaml")
 FIRMWARE_ROOT = Path("/opt/wisafe2/firmware/Arduino")
 OPTIONS_PATH = Path("/data/options.json")
 CORE_API = "http://supervisor/core/api"
@@ -101,18 +102,22 @@ def run_command(command: list[str]) -> None:
     subprocess.run(command, check=True)
 
 
+def arduino_command(*arguments: str) -> list[str]:
+    """Build an Arduino CLI command using the image's pinned package store."""
+    return ["arduino-cli", *arguments, "--config-file", str(ARDUINO_CONFIG)]
+
+
 def compile_firmware(paths: FirmwarePaths) -> None:
     """Compile the selected sketch against its bundled shared libraries."""
     run_command(
-        [
-            "arduino-cli",
+        arduino_command(
             "compile",
             "--fqbn",
             FQBN,
             "--libraries",
             str(paths.libraries),
             str(paths.sketch),
-        ]
+        )
     )
 
 
@@ -158,8 +163,7 @@ def flash_firmware(
         suspended = True
         compile_firmware(paths)
         run_command(
-            [
-                "arduino-cli",
+            arduino_command(
                 "upload",
                 "--verify",
                 "--fqbn",
@@ -167,7 +171,7 @@ def flash_firmware(
                 "--port",
                 device,
                 str(paths.sketch),
-            ]
+            )
         )
         if not wait_for_device(device):
             raise UpdaterError(
@@ -224,7 +228,7 @@ def main() -> int:
                 raise
 
     if action == "board-list":
-        run_command(["arduino-cli", "board", "list"])
+        run_command(arduino_command("board", "list"))
         by_id = Path("/dev/serial/by-id")
         print("/dev/serial/by-id devices:")
         for device in sorted(by_id.glob("*")) if by_id.is_dir() else []:

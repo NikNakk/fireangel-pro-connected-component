@@ -50,7 +50,12 @@ def test_compile_does_not_call_home_assistant(tmp_path: Path) -> None:
     paths = firmware_paths("v2", tmp_path)
     with patch("wisafe2_firmware.app.updater.run_command") as run:
         compile_firmware(paths)
-    assert run.call_args.args[0][0:2] == ["arduino-cli", "compile"]
+    command = run.call_args.args[0]
+    assert command[0:2] == ["arduino-cli", "compile"]
+    assert command[-2:] == [
+        "--config-file",
+        "/opt/wisafe2/arduino-cli.yaml",
+    ]
 
 
 def test_flash_suspends_uploads_and_resumes(tmp_path: Path) -> None:
@@ -72,6 +77,10 @@ def test_flash_suspends_uploads_and_resumes(tmp_path: Path) -> None:
     ]
     compile_mock.assert_called_once()
     assert "--verify" in run.call_args.args[0]
+    assert run.call_args.args[0][-2:] == [
+        "--config-file",
+        "/opt/wisafe2/arduino-cli.yaml",
+    ]
 
 
 def test_flash_failure_still_resumes_and_resume_failure_is_overall_failure(
