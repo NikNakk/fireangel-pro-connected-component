@@ -62,6 +62,11 @@ beside the app Dockerfile and publishes a multi-architecture image whose tag
 matches `config.yaml`'s app version. The running app never clones a branch or
 downloads firmware. Arduino CLI 1.3.1 and Arduino AVR core 1.8.6 are pinned.
 
+App releases use `app-vX.Y.Z` repository tags and are independent of `vX.Y.Z`
+integration releases. App tags publish container images but deliberately do not
+create GitHub Releases, preventing HACS from treating an app-only release as an
+integration update.
+
 The bridge and integration supplement the alarms' native interlink behavior.
 They are not certified life-safety equipment and do not replace standalone
 FireAngel alarms or physical alarm testing.

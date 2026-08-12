@@ -103,9 +103,11 @@ jobs:
           python-version: "3.13"
 
       - name: Validate repository and app YAML
+        id: app
         run: |
           python -m pip install PyYAML
           python - <<'PY'
+          import os
           import yaml
           repository = yaml.safe_load(open("repository.yaml"))
           app = yaml.safe_load(open("wisafe2_firmware/config.yaml"))
@@ -113,6 +115,8 @@ jobs:
           assert {"name", "version", "slug", "description", "arch", "schema"} <= app.keys()
           assert app["image"] == "ghcr.io/niknakk/wisafe2-firmware"
           assert set(app["arch"]) == {"aarch64", "amd64"}
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f'version={app["version"]}', file=output)
           PY
 
       - name: Stage release-matched firmware build context
@@ -122,6 +126,6 @@ jobs:
         run: |
           docker build \
             --build-arg BUILD_ARCH=amd64 \
-            --build-arg BUILD_VERSION=0.1.0 \
+            --build-arg BUILD_VERSION=${{ steps.app.outputs.version }} \
             --tag wisafe2-firmware:test \
             /tmp/wisafe2-app-context

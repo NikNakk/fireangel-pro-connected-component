@@ -161,7 +161,9 @@ must install only the runtime integration.
 
 ## Changelog
 
-- Keep `CHANGELOG.md` updated for every user-visible change.
+- Keep the root `CHANGELOG.md` updated for user-visible integration, shared
+  firmware, and repository changes. Keep `wisafe2_firmware/CHANGELOG.md`
+  updated for user-visible firmware updater app changes.
 - Add pending changes under `Unreleased`, using the Keep a Changelog categories
   `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security` as
   appropriate.
@@ -174,9 +176,33 @@ must install only the runtime integration.
 
 ## Release publishing
 
-- Publishing a release from this repository only requires committing the
-  prepared release on `main`, creating its annotated version tag, and pushing
-  both `main` and the tag to `origin`.
-- Do not require GitHub CLI authentication, create a pull request, or publish a
-  GitHub Release unless the user explicitly requests one of those additional
-  actions. A successfully pushed tag is sufficient.
+- The integration and firmware updater app are versioned independently even
+  though they share this repository. Do not bump or publish the unaffected
+  component merely because the other one changed.
+- For an integration release, update
+  `custom_components/fireangel_pro_connected/manifest.json` and the root
+  `CHANGELOG.md`, then create an annotated `vX.Y.Z` tag. The
+  `integration-release.yml` workflow validates that the tag matches the
+  manifest and creates the GitHub Release consumed by HACS. It does not publish
+  an updater app image.
+- For a firmware updater app release, update `wisafe2_firmware/config.yaml` and
+  `wisafe2_firmware/CHANGELOG.md`, then create an annotated `app-vX.Y.Z` tag.
+  The `app-release.yml` workflow validates that the tag matches the app config
+  and publishes `ghcr.io/niknakk/wisafe2-firmware:X.Y.Z`. It intentionally does
+  not create a GitHub Release, so HACS does not mistake an app version for an
+  integration update.
+- App release source, including bundled firmware, is taken from the exact
+  `app-vX.Y.Z` tag. Commit the app version to `main` before tagging, and do not
+  announce the update as available until the image workflow succeeds; the app
+  store can observe the new config version before its image finishes publishing.
+- A change spanning both components may update both versions and changelogs and
+  use both tag forms. Shared firmware changes normally require an app release
+  because firmware is bundled into that image, but require an integration
+  release only when integration behavior or compatibility also changes.
+- Publishing either release requires committing the prepared release on
+  `main`, creating the appropriate annotated tag, and pushing both `main` and
+  that tag to `origin`.
+- Do not require GitHub CLI authentication or create a pull request. Do not
+  manually publish a GitHub Release unless the user explicitly requests it;
+  pushing an integration tag triggers that publication automatically, while
+  app tags must remain tag-and-image releases only.

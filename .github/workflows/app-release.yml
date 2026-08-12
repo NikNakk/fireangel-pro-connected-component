@@ -3,7 +3,7 @@ name: Firmware updater app release
 on:
   push:
     tags:
-      - "v*"
+      - "app-v*"
 
 env:
   ARCHITECTURES: '["amd64", "aarch64"]'
@@ -24,7 +24,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${GITHUB_REF_NAME#app-v}"
           configured="$(sed -n 's/^version: "\(.*\)"/\1/p' wisafe2_firmware/config.yaml)"
           test "$version" = "$configured"
           echo "version=$version" >> "$GITHUB_OUTPUT"

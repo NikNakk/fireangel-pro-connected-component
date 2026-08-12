@@ -62,6 +62,24 @@ CI compiles both images for `arduino:avr:nano:cpu=atmega328old`. These files are
 kept outside `custom_components`, so HACS installs only the Home Assistant
 runtime integration.
 
+### Release versioning
+
+The integration and firmware updater app are released independently from this
+monorepo:
+
+- Integration releases use `vX.Y.Z`, match the version in
+  `custom_components/fireangel_pro_connected/manifest.json`, and create the
+  GitHub Release used by HACS.
+- Firmware updater app releases use `app-vX.Y.Z`, match
+  `wisafe2_firmware/config.yaml`, and publish the corresponding
+  `ghcr.io/niknakk/wisafe2-firmware:X.Y.Z` image without creating a GitHub
+  Release.
+
+An integration-only change therefore does not prompt an HAOS app update, and an
+app-only change does not appear as a HACS integration update. Shared firmware
+changes normally require an app release because the tagged firmware source is
+bundled into the app image.
+
 ## Installation
 
 ### Home Assistant OS firmware updater (optional)
