@@ -1,5 +1,5 @@
 name: WiSafe2 Firmware Updater
-version: "0.1.0-beta.19"
+version: "0.1.0-beta.20"
 slug: wisafe2_firmware
 description: Compile and flash the bundled FireAngel WiSafe2 Arduino Nano firmware
 url: https://github.com/NikNakk/fireangel-pro-connected-component

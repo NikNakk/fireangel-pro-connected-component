@@ -34,6 +34,7 @@ jobs:
         with:
           architectures: ${{ env.ARCHITECTURES }}
           image-name: ${{ env.IMAGE_NAME }}
+          registry-prefix: ghcr.io/niknakk
 
   build:
     needs: init
@@ -74,3 +75,4 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
           image-tags: ${{ needs.init.outputs.version }}
+          registry-prefix: ghcr.io/niknakk

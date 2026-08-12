@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.20] - 2026-08-12
+
+### Fixed
+
+- Forced the firmware updater's GHCR namespace to lowercase so Docker accepts
+  the generated per-architecture image tags.
+
 ## [0.1.0-beta.19] - 2026-08-12
 
 ### Fixed
@@ -279,7 +286,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...HEAD
+[0.1.0-beta.20]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...v0.1.0-beta.20
 [0.1.0-beta.19]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...v0.1.0-beta.19
 [0.1.0-beta.18]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.17...v0.1.0-beta.18
 [0.1.0-beta.17]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.16...v0.1.0-beta.17
