@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.23 - 2026-08-12
+
+- Preserved Supervisor-injected environment variables through the s6-overlay
+  entrypoint so authenticated Home Assistant maintenance calls can run.
+
 ## 0.1.0-beta.22 - 2026-08-12
 
 - Switched to the Home Assistant Debian base so the bundled Arduino AVR

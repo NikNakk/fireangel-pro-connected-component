@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.23] - 2026-08-12
+
+### Fixed
+
+- Started the updater through s6-overlay's `with-contenv` helper so the
+  Supervisor-provided API token reaches the firmware flashing process.
+
 ## [0.1.0-beta.22] - 2026-08-12
 
 ### Fixed
@@ -303,7 +310,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...HEAD
+[0.1.0-beta.23]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...v0.1.0-beta.23
 [0.1.0-beta.22]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...v0.1.0-beta.22
 [0.1.0-beta.21]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...v0.1.0-beta.21
 [0.1.0-beta.20]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...v0.1.0-beta.20

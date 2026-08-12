@@ -34,4 +34,4 @@ LABEL io.hass.name="WiSafe2 Firmware Updater" \
       io.hass.arch="${BUILD_ARCH}" \
       io.hass.version="${BUILD_VERSION}"
 
-CMD ["python3", "/opt/wisafe2/app/updater.py"]
+CMD ["/command/with-contenv", "python3", "/opt/wisafe2/app/updater.py"]
