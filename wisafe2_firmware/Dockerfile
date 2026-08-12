@@ -8,9 +8,6 @@ RUN apk add --no-cache python3 py3-pyserial ca-certificates curl tar \
     && case "${BUILD_ARCH}" in \
          aarch64) cli_arch=ARM64 ;; \
          amd64) cli_arch=64bit ;; \
-         armhf) cli_arch=ARMv6 ;; \
-         armv7) cli_arch=ARMv7 ;; \
-         i386) cli_arch=32bit ;; \
          *) echo "Unsupported architecture: ${BUILD_ARCH}" >&2; exit 1 ;; \
        esac \
     && curl -fsSL "https://downloads.arduino.cc/arduino-cli/arduino-cli_${ARDUINO_CLI_VERSION}_Linux_${cli_arch}.tar.gz" \

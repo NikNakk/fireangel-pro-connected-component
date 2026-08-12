@@ -6,7 +6,7 @@ on:
       - "v*"
 
 env:
-  ARCHITECTURES: '["amd64", "aarch64", "armhf", "armv7", "i386"]'
+  ARCHITECTURES: '["amd64", "aarch64"]'
   IMAGE_NAME: wisafe2-firmware
 
 permissions:

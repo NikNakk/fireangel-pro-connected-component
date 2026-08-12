@@ -7,6 +7,14 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.19] - 2026-08-12
+
+### Fixed
+
+- Restricted firmware updater image publishing to the `amd64` and `aarch64`
+  architectures accepted by the current Home Assistant multi-architecture
+  builder, preventing release initialization from failing on `armhf`.
+
 ## [0.1.0-beta.18] - 2026-08-12
 
 ### Added
@@ -271,7 +279,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...HEAD
+[0.1.0-beta.19]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...v0.1.0-beta.19
 [0.1.0-beta.18]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.17...v0.1.0-beta.18
 [0.1.0-beta.17]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.16...v0.1.0-beta.17
 [0.1.0-beta.16]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.15...v0.1.0-beta.16
