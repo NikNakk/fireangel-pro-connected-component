@@ -1,0 +1,27 @@
+name: WiSafe2 Firmware Updater
+version: "0.1.0-beta.18"
+slug: wisafe2_firmware
+description: Compile and flash the bundled FireAngel WiSafe2 Arduino Nano firmware
+url: https://github.com/NikNakk/fireangel-pro-connected-component
+image: ghcr.io/niknakk/wisafe2-firmware
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: once
+boot: manual_only
+init: false
+uart: true
+udev: true
+homeassistant_api: true
+options:
+  action: compile
+  source: v2
+  serial_device: auto
+schema:
+  action: list(board-list|compile|flash)
+  source: list(v1|v2)
+  serial_device: str
+  config_entry_id: str?

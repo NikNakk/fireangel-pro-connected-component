@@ -6,6 +6,11 @@ based on the
 It communicates directly with the Arduino over USB serial; no cloud service is
 involved.
 
+This repository also contains an optional Home Assistant OS **WiSafe2 Firmware
+Updater** app (formerly called an add-on). It compiles and flashes the bundled
+Arduino firmware while coordinating temporary serial-port maintenance with the
+integration. The updater is separate from the HACS-installed integration.
+
 The recommended legacy image is the bundled
 [bug-fixed firmware](firmware/Arduino/FireAngelNano/FireAngelNano.ino).
 The original C19HOP legacy firmware remains supported for existing users. The
@@ -58,6 +63,19 @@ kept outside `custom_components`, so HACS installs only the Home Assistant
 runtime integration.
 
 ## Installation
+
+### Home Assistant OS firmware updater (optional)
+
+1. Install and configure the integration first.
+2. Open **Settings → Apps → App store**, open the repository menu, and add
+   `https://github.com/NikNakk/fireangel-pro-connected-component`.
+3. Install **WiSafe2 Firmware Updater**.
+4. Set `action`, `source`, and normally `serial_device: auto`, save, then start
+   the app manually. Read the app log for the result.
+
+See the [updater documentation](wisafe2_firmware/DOCS.md) before flashing.
+Home Assistant Container/Core installations do not provide the Supervisor app
+store and cannot install this updater.
 
 ### HACS
 

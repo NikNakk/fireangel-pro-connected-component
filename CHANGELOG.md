@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.18] - 2026-08-12
+
+### Added
+
+- Added an optional Home Assistant OS WiSafe2 Firmware Updater app with
+  release-bundled v1/v2 compilation, board discovery, verified Nano flashing,
+  and safe automatic serial-port coordination with the integration.
+- Added authenticated, config-entry-targeted maintenance services which release
+  and resume bridge serial communication without unloading detector entities.
+- Extended diagnostics with the configured port and maintenance suspension
+  state.
+
+## [0.1.0-beta.17] - 2026-08-12
+
 ### Added
 
 - Bundled the maintained legacy and Protocol V2 Arduino images, shared
@@ -257,7 +271,9 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.16...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...HEAD
+[0.1.0-beta.18]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.17...v0.1.0-beta.18
+[0.1.0-beta.17]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.16...v0.1.0-beta.17
 [0.1.0-beta.16]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.15...v0.1.0-beta.16
 [0.1.0-beta.15]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.14...v0.1.0-beta.15
 [0.1.0-beta.14]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.13...v0.1.0-beta.14

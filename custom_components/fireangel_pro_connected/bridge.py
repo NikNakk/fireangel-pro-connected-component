@@ -122,6 +122,7 @@ class FireAngelBridge:
         )
         self.devices: dict[str, DetectorState] = {}
         self.connected = False
+        self.maintenance_suspended = False
         self.last_message: str | None = None
         self.last_message_summary: str | None = None
         self.last_heartbeat: datetime | None = None
@@ -208,6 +209,34 @@ class FireAngelBridge:
             "FireAngel Pro Connected serial reader",
         )
 
+    async def async_suspend_for_maintenance(self) -> None:
+        """Release the serial port until maintenance is explicitly finished."""
+        self.maintenance_suspended = True
+        if self._task is not None:
+            self._task.cancel()
+            await asyncio.gather(self._task, return_exceptions=True)
+            self._task = None
+        self._reader = None
+        self._close_writer()
+        # Let the serial transport's close callback run before reporting that
+        # another process may claim the device.
+        await asyncio.sleep(0)
+        self.connected = False
+        self._cancel_activity_timer()
+        self._notify_update()
+
+    async def async_resume_from_maintenance(self) -> None:
+        """Allow the normal serial reader and reconnect loop to run again."""
+        if not self.maintenance_suspended and self._task is not None:
+            return
+        self.maintenance_suspended = False
+        if self._task is None:
+            self._task = self.hass.async_create_background_task(
+                self._async_read_forever(),
+                "FireAngel Pro Connected serial reader",
+            )
+        self._notify_update()
+
     async def async_stop(self) -> None:
         """Stop reading and close the serial connection."""
         if self._task is not None:
@@ -221,6 +250,8 @@ class FireAngelBridge:
 
     async def _async_connect(self) -> None:
         """Connect to the configured serial port."""
+        if self.maintenance_suspended:
+            return
         self._set_protocol(ProtocolMode.UNKNOWN)
         self._reader, self._writer = await serial_asyncio_fast.open_serial_connection(
             url=self.port,
@@ -231,7 +262,7 @@ class FireAngelBridge:
 
     async def _async_read_forever(self) -> None:
         """Read lines and reconnect after serial failures."""
-        while True:
+        while not self.maintenance_suspended:
             try:
                 if self._reader is None:
                     await self._async_connect()
@@ -244,10 +275,12 @@ class FireAngelBridge:
             except (OSError, SerialException) as err:
                 _LOGGER.warning("FireAngel serial connection lost: %s", err)
                 self.connected = False
+                self.last_error = str(err)
                 self._reader = None
                 self._close_writer()
                 self._notify_update()
-                await asyncio.sleep(_RECONNECT_DELAY)
+                if not self.maintenance_suspended:
+                    await asyncio.sleep(_RECONNECT_DELAY)
 
     def _close_writer(self) -> None:
         """Close the current serial writer."""

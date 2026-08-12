@@ -49,6 +49,8 @@ async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None
     assert diagnostics["bridge"]["protocol_mode"] == "v2"
     assert diagnostics["bridge"]["protocol_version"] == 2
     assert diagnostics["bridge"]["firmware_version"] == "2.0.0"
+    assert diagnostics["bridge"]["configured_port"] == "/dev/ttyUSB0"
+    assert diagnostics["bridge"]["maintenance_suspended"] is False
     assert diagnostics["bridge"]["last_activity"] is not None
     assert diagnostics["bridge"]["last_message"].startswith('{"type":"event"')
     assert diagnostics["detectors"] == {

@@ -70,6 +70,38 @@
       }
     }
   },
+  "services": {
+    "maintenance_status": {
+      "name": "Get serial maintenance status",
+      "description": "Returns the selected bridge's serial port and maintenance lifecycle state.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Target entry. Required when multiple FireAngel bridges are loaded."
+        }
+      }
+    },
+    "suspend_for_maintenance": {
+      "name": "Suspend serial communication for maintenance",
+      "description": "Closes the selected bridge's serial connection until it is explicitly resumed.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Target entry. Required when multiple FireAngel bridges are loaded."
+        }
+      }
+    },
+    "resume_after_maintenance": {
+      "name": "Resume serial communication after maintenance",
+      "description": "Restarts the selected bridge's normal serial connection and reconnect lifecycle.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "Target entry. Required when multiple FireAngel bridges are loaded."
+        }
+      }
+    }
+  },
   "entity": {
     "binary_sensor": {
       "alarm": {"name": "Alarm"},

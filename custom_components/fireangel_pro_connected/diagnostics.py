@@ -22,7 +22,9 @@ async def async_get_config_entry_diagnostics(
     bridge = getattr(entry, "runtime_data", None)
     if bridge is not None:
         diagnostics["bridge"] = {
+            "configured_port": bridge.port,
             "connected": bridge.connected,
+            "maintenance_suspended": bridge.maintenance_suspended,
             "protocol_mode": bridge.protocol_mode,
             "protocol_version": bridge.protocol_version,
             "firmware_version": bridge.firmware_version,

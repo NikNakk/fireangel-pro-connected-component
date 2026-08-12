@@ -1,0 +1,22 @@
+maintenance_status:
+  fields:
+    config_entry_id:
+      required: false
+      example: 01J123456789ABCDEFGHIJKLMN
+      selector:
+        config_entry:
+          integration: fireangel_pro_connected
+suspend_for_maintenance:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: fireangel_pro_connected
+resume_after_maintenance:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: fireangel_pro_connected

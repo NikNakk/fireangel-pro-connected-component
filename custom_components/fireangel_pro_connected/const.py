@@ -15,6 +15,12 @@ CONF_MODEL: Final = "model"
 CONF_NAME: Final = "name"
 CONF_PORT: Final = "port"
 
+ATTR_CONFIG_ENTRY_ID: Final = "config_entry_id"
+
+SERVICE_MAINTENANCE_STATUS: Final = "maintenance_status"
+SERVICE_RESUME_AFTER_MAINTENANCE: Final = "resume_after_maintenance"
+SERVICE_SUSPEND_FOR_MAINTENANCE: Final = "suspend_for_maintenance"
+
 DEFAULT_BAUD_RATE: Final = 115200
 DEFAULT_BRIDGE_DEVICE_ID: Final = "A5B813"
 
