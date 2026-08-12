@@ -7,6 +7,15 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-beta.22] - 2026-08-12
+
+### Fixed
+
+- Switched the firmware updater image from Alpine to the Home Assistant Debian
+  base so Arduino's glibc-linked AVR compiler can execute on supported hosts.
+- Supplied a writable runtime home directory when Supervisor does not define
+  `HOME`, eliminating Arduino CLI home-directory warnings.
+
 ## [0.1.0-beta.21] - 2026-08-12
 
 ### Fixed
@@ -294,7 +303,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...HEAD
+[0.1.0-beta.22]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...v0.1.0-beta.22
 [0.1.0-beta.21]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.20...v0.1.0-beta.21
 [0.1.0-beta.20]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.19...v0.1.0-beta.20
 [0.1.0-beta.19]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.18...v0.1.0-beta.19

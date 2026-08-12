@@ -58,6 +58,18 @@ def test_compile_does_not_call_home_assistant(tmp_path: Path) -> None:
     ]
 
 
+def test_command_supplies_home_when_supervisor_omits_it() -> None:
+    """Arduino CLI receives a writable home in the add-on runtime."""
+    from wisafe2_firmware.app.updater import run_command
+
+    with (
+        patch.dict("wisafe2_firmware.app.updater.os.environ", {}, clear=True),
+        patch("wisafe2_firmware.app.updater.subprocess.run") as run,
+    ):
+        run_command(["arduino-cli", "version"])
+    assert run.call_args.kwargs["env"]["HOME"] == "/data"
+
+
 def test_flash_suspends_uploads_and_resumes(tmp_path: Path) -> None:
     """A successful flash brackets tool calls with maintenance services."""
     client = Mock()

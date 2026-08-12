@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.22 - 2026-08-12
+
+- Switched to the Home Assistant Debian base so the bundled Arduino AVR
+  toolchain has its required glibc runtime.
+- Set a writable fallback `HOME` for Arduino CLI when Supervisor omits it.
+
 ## 0.1.0-beta.21 - 2026-08-12
 
 - Made Arduino CLI use the same explicit configuration and package directory at

@@ -99,7 +99,9 @@ def resolve_serial_device(
 
 def run_command(command: list[str]) -> None:
     """Run one tool command with output streamed to the add-on log."""
-    subprocess.run(command, check=True)
+    environment = os.environ.copy()
+    environment.setdefault("HOME", "/data")
+    subprocess.run(command, check=True, env=environment)
 
 
 def arduino_command(*arguments: str) -> list[str]:

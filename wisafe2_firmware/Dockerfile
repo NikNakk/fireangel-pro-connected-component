@@ -1,10 +1,13 @@
-FROM ghcr.io/home-assistant/base:3.22
+ARG BUILD_ARCH
+FROM ghcr.io/home-assistant/${BUILD_ARCH}-base-debian:bookworm
 
 ARG BUILD_ARCH
 ARG BUILD_VERSION
 ARG ARDUINO_CLI_VERSION=1.3.1
 
-RUN apk add --no-cache python3 py3-pyserial ca-certificates curl tar \
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends python3 python3-serial ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
     && case "${BUILD_ARCH}" in \
          aarch64) cli_arch=ARM64 ;; \
          amd64) cli_arch=64bit ;; \
