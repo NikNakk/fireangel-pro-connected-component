@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+## 0.1.1 - 2026-08-13
+
+- Display the independently versioned bundled firmware selection before builds
+  and in successful compile/flash results.
+- Preserve safe integration resume behavior for ordinary failures without
+  catching process-level exceptions.
+- Cover stable `/dev/serial/by-id` re-enumeration during flashing.
+
 ## 0.1.0 - 2026-08-12
 
 - Added an app-store icon matching the integration.

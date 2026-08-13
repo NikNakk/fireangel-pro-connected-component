@@ -5,6 +5,8 @@ ARG BUILD_ARCH
 ARG BUILD_VERSION
 ARG ARDUINO_CLI_VERSION=1.3.1
 
+ENV UPDATER_APP_VERSION="${BUILD_VERSION}"
+
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends python3 python3-serial ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
@@ -26,7 +28,7 @@ RUN apt-get update \
       | grep -F "arduino:avr"
 
 COPY app /opt/wisafe2/app
-COPY firmware/Arduino /opt/wisafe2/firmware/Arduino
+COPY firmware /opt/wisafe2/firmware
 
 LABEL io.hass.name="WiSafe2 Firmware Updater" \
       io.hass.description="Compile and flash release-matched WiSafe2 bridge firmware" \

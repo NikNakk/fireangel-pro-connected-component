@@ -87,6 +87,7 @@ class DetectorState:
     bridge_device: bool = False
     raw_status: Any | None = None
     last_raw_frame: str | None = None
+    last_raw_frame_at: datetime | None = None
 
     @property
     def resolved_device_type(self) -> str:
@@ -181,6 +182,10 @@ class FireAngelBridge:
                 timestamp = dt_util.parse_datetime(value)
                 if timestamp is not None and timestamp.tzinfo is not None:
                     state.last_test_pass = timestamp
+            if (value := values.get("last_raw_frame_at")) is not None:
+                timestamp = dt_util.parse_datetime(value)
+                if timestamp is not None and timestamp.tzinfo is not None:
+                    state.last_raw_frame_at = timestamp
 
     @staticmethod
     def normalize_device_id(value: str) -> str | None:
@@ -749,6 +754,7 @@ class FireAngelBridge:
             and _RAW_FRAME_PATTERN.fullmatch(raw_frame)
         ):
             state.last_raw_frame = raw_frame.upper()
+            state.last_raw_frame_at = now
         event = str(fields.get("event", "")).strip().upper()
         result = str(fields.get("result", "")).strip().upper()
         if (
@@ -852,6 +858,11 @@ class FireAngelBridge:
             | (
                 {"last_test_pass": device.last_test_pass.isoformat()}
                 if device.last_test_pass is not None
+                else {}
+            )
+            | (
+                {"last_raw_frame_at": device.last_raw_frame_at.isoformat()}
+                if device.last_raw_frame_at is not None
                 else {}
             )
             for device_id, device in self.devices.items()

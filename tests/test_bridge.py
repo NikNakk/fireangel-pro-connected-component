@@ -284,7 +284,14 @@ async def test_ignore_invalid_persisted_last_test_timestamp(
     """Ignore a malformed timestamp while restoring the remaining status."""
     bridge = make_bridge(hass, options={CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]})
     bridge._store.async_load = AsyncMock(
-        return_value={"A1B2C3": {"event": "CLEAR", "last_test_pass": "not-a-timestamp"}}
+        return_value={
+            "A1B2C3": {
+                "event": "CLEAR",
+                "last_test_pass": "not-a-timestamp",
+                "last_raw_frame": "D20C101076DFA1B2C300FF08007E",
+                "last_raw_frame_at": "not-a-timestamp",
+            }
+        }
     )
 
     await bridge.async_load_persisted_state()
@@ -292,6 +299,8 @@ async def test_ignore_invalid_persisted_last_test_timestamp(
     detector = bridge.devices["A1B2C3"]
     assert detector.event == "CLEAR"
     assert detector.last_test_pass is None
+    assert detector.last_raw_frame == "D20C101076DFA1B2C300FF08007E"
+    assert detector.last_raw_frame_at is None
 
 
 async def test_serial_lifecycle(hass: HomeAssistant) -> None:
@@ -901,18 +910,28 @@ def test_missing_raw_frame_is_retained_and_validated(hass: HomeAssistant) -> Non
     """Preserve valid MISSING frame evidence without filtering the bridge ID."""
     bridge = make_bridge(hass)
     raw_frame = "d22a384100efa5b813000009407e"
+    received_at = datetime(2026, 8, 12, 12, 0, tzinfo=UTC)
 
-    bridge.async_process_line(
-        '{"type":"event","device":"A5B813","event":"MISSING",'
-        '"base":"MISSING","battery":"MISSING","raw_status":0,'
-        f'"raw_frame":"{raw_frame}"}}'
-    )
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.dt_util.utcnow",
+        return_value=received_at,
+    ):
+        bridge.async_process_line(
+            '{"type":"event","device":"A5B813","event":"MISSING",'
+            '"base":"MISSING","battery":"MISSING","raw_status":0,'
+            f'"raw_frame":"{raw_frame}"}}'
+        )
 
     state = bridge.devices["A5B813"]
     assert state.is_bridge_device
     assert state.event == "MISSING"
     assert state.last_raw_frame == raw_frame.upper()
+    assert state.last_raw_frame_at == received_at
     assert bridge._stored_status()["A5B813"]["last_raw_frame"] == raw_frame.upper()
+    assert (
+        bridge._stored_status()["A5B813"]["last_raw_frame_at"]
+        == received_at.isoformat()
+    )
 
     for invalid in ("ABC", "GG", "0xD2", ""):
         bridge.async_process_line(
@@ -920,11 +939,35 @@ def test_missing_raw_frame_is_retained_and_validated(hass: HomeAssistant) -> Non
             f'"raw_frame":"{invalid}"}}'
         )
         assert state.last_raw_frame == raw_frame.upper()
+        assert state.last_raw_frame_at == received_at
 
     bridge.async_process_line(
         '{"type":"event","device":"A5B813","event":"SILENCE","raw_status":1}'
     )
     assert state.last_raw_frame == raw_frame.upper()
+    assert state.last_raw_frame_at == received_at
+
+
+async def test_raw_frame_timestamp_persists_and_restores(
+    hass: HomeAssistant,
+) -> None:
+    """Restore valid retained RF evidence and its Home Assistant receive time."""
+    received_at = datetime(2026, 8, 12, 12, 30, tzinfo=UTC)
+    bridge = make_bridge(hass, options={CONF_DEVICES: [{CONF_DEVICE_ID: "A1B2C3"}]})
+    bridge._store.async_load = AsyncMock(
+        return_value={
+            "A1B2C3": {
+                "last_raw_frame": "D20C101076DFA1B2C300FF08007E",
+                "last_raw_frame_at": received_at.isoformat(),
+            }
+        }
+    )
+
+    await bridge.async_load_persisted_state()
+
+    state = bridge.devices["A1B2C3"]
+    assert state.last_raw_frame == "D20C101076DFA1B2C300FF08007E"
+    assert state.last_raw_frame_at == received_at
 
 
 async def test_all_v2_command_bytes_match_protocol_contract(

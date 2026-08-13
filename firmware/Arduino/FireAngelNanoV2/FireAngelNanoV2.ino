@@ -1,4 +1,5 @@
 #include <WiSafeRadioCore.h>
+#include "firmware_version.h"
 
 const byte SERIAL_BUFFER_SIZE = 79;
 char serialBuffer[SERIAL_BUFFER_SIZE + 1];
@@ -7,7 +8,7 @@ boolean serialFrameOverflow = false;
 boolean pairingInProgress = false;
 boolean activeCommandHasId = false;
 unsigned int activeCommandId = 0;
-const char FIRMWARE_VERSION[] = "2.0.0";
+const char FIRMWARE_VERSION[] = WISAFE_FIRMWARE_VERSION;
 const byte SERIAL_PROTOCOL_VERSION = 2;
 
 //------------------------EMBEDDED DEVICE INFO GOES HERE-------------------------------

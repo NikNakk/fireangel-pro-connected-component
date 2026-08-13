@@ -20,6 +20,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
+      - name: Validate firmware version metadata
+        run: python3 scripts/generate_firmware_version_header.py --check
       - name: Verify tag matches app version
         id: version
         shell: bash

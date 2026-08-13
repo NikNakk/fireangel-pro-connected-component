@@ -1,0 +1,12 @@
+{
+  "v1": {
+    "name": "Maintained legacy",
+    "version": "1.0.0",
+    "sketch": "FireAngelNano"
+  },
+  "v2": {
+    "name": "Protocol V2",
+    "version": "2.0.1",
+    "sketch": "FireAngelNanoV2"
+  }
+}

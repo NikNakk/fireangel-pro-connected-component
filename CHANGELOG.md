@@ -7,6 +7,24 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-13
+
+### Added
+
+- Added independent machine-readable firmware version metadata, a generated V2
+  compile-time header, and CI consistency validation.
+- Timestamped retained raw RF frames using their Home Assistant receive time,
+  including persistence, entity attributes, and diagnostics.
+- Reported selected firmware and updater app versions in updater logs, with a
+  realistic stable `/dev/serial/by-id` re-enumeration regression test.
+
+### Changed
+
+- Bumped Protocol V2 firmware to `2.0.1`; the maintained legacy bundle remains
+  `1.0.0` without changing its serial protocol.
+- Narrowed updater recovery handling from `BaseException` to ordinary
+  `Exception` failures so process-level interrupts are not swallowed.
+
 ## [0.1.0] - 2026-08-12
 
 ### Added
@@ -323,7 +341,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...v0.1.0
 [0.1.0-beta.23]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...v0.1.0-beta.23
 [0.1.0-beta.22]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.21...v0.1.0-beta.22

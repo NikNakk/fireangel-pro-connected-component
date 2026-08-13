@@ -32,7 +32,7 @@ normal mode it emits newline-delimited JSON exclusively and identifies itself
 after every successful boot:
 
 ```json
-{"type":"bridge","event":"startup","firmware":"2.0.0","protocol":2,"radio":"ready"}
+{"type":"bridge","event":"startup","firmware":"2.0.1","protocol":2,"radio":"ready"}
 ```
 
 It does not accept legacy commands, does not negotiate, and cannot switch to

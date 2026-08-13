@@ -18,7 +18,7 @@ JSON.
 After the radio initializes, every normal-mode boot emits:
 
 ```json
-{"type":"bridge","event":"startup","firmware":"2.0.0","protocol":2,"radio":"ready"}
+{"type":"bridge","event":"startup","firmware":"2.0.1","protocol":2,"radio":"ready"}
 ```
 
 This unsolicited message tells Home Assistant that the board is running the
@@ -74,7 +74,7 @@ Request status with:
 Example response:
 
 ```json
-{"type":"status","id":17,"firmware":"2.0.0","protocol":2,"uptime":123456,"radio":"ready","diagnostics":{"overflow":0,"malformed":0,"incomplete":0,"unknown":0,"command_timeout":0,"command_retry":0,"radio_reinit":0}}
+{"type":"status","id":17,"firmware":"2.0.1","protocol":2,"uptime":123456,"radio":"ready","diagnostics":{"overflow":0,"malformed":0,"incomplete":0,"unknown":0,"command_timeout":0,"command_retry":0,"radio_reinit":0}}
 ```
 
 Diagnostic counters are unsigned 16-bit counters, wrap naturally, and reset at
@@ -179,12 +179,12 @@ resynchronize.
 The first line is unsolicited. `>` is host input and `<` is firmware output.
 
 ```text
-< {"type":"bridge","event":"startup","firmware":"2.0.0","protocol":2,"radio":"ready"}<LF>
+< {"type":"bridge","event":"startup","firmware":"2.0.1","protocol":2,"radio":"ready"}<LF>
 > {"command":"sound_fire","id":17}<LF>
 < {"type":"command_result","id":17,"command":"sound_fire","result":"accepted"}<LF>
 < {"type":"event","device":"92BF1A","model":"ED08","event":"FIRE_TEST","result":"PASS","base":"ON","battery":"OK","raw_status":1}<LF>
 > {"command":"status","id":18}<LF>
-< {"type":"status","id":18,"firmware":"2.0.0","protocol":2,"uptime":123456,"radio":"ready","diagnostics":{"overflow":0,"malformed":0,"incomplete":0,"unknown":0,"command_timeout":0,"command_retry":0,"radio_reinit":0}}<LF>
+< {"type":"status","id":18,"firmware":"2.0.1","protocol":2,"uptime":123456,"radio":"ready","diagnostics":{"overflow":0,"malformed":0,"incomplete":0,"unknown":0,"command_timeout":0,"command_retry":0,"radio_reinit":0}}<LF>
 ```
 
 ## Relationship to legacy firmware

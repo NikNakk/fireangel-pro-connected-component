@@ -16,10 +16,10 @@ from typing import Any
 FQBN = "arduino:avr:nano:cpu=atmega328old"
 ARDUINO_CONFIG = Path("/opt/wisafe2/arduino-cli.yaml")
 FIRMWARE_ROOT = Path("/opt/wisafe2/firmware/Arduino")
+FIRMWARE_METADATA = Path("/opt/wisafe2/firmware/firmware-versions.json")
 OPTIONS_PATH = Path("/data/options.json")
 CORE_API = "http://supervisor/core/api"
 DOMAIN = "fireangel_pro_connected"
-SOURCE_SKETCHES = {"v1": "FireAngelNano", "v2": "FireAngelNanoV2"}
 
 
 class UpdaterError(RuntimeError):
@@ -32,15 +32,47 @@ class FirmwarePaths:
 
     sketch: Path
     libraries: Path
+    name: str
+    version: str
 
 
-def firmware_paths(source: str, root: Path = FIRMWARE_ROOT) -> FirmwarePaths:
+def firmware_paths(
+    source: str,
+    root: Path = FIRMWARE_ROOT,
+    metadata_path: Path | None = None,
+) -> FirmwarePaths:
     """Resolve a supported firmware variant without accepting arbitrary paths."""
+    metadata_path = metadata_path or root.parent / "firmware-versions.json"
     try:
-        sketch = root / SOURCE_SKETCHES[source]
-    except KeyError as err:
-        raise UpdaterError(f"Unsupported firmware source: {source}") from err
-    return FirmwarePaths(sketch=sketch, libraries=root / "libraries")
+        metadata = json.loads(metadata_path.read_text())
+        selected = metadata[source]
+        name = selected["name"]
+        version = selected["version"]
+        sketch_name = selected["sketch"]
+    except (KeyError, json.JSONDecodeError, OSError, TypeError) as err:
+        if source not in {"v1", "v2"}:
+            raise UpdaterError(f"Unsupported firmware source: {source}") from err
+        raise UpdaterError(f"Unable to read bundled firmware metadata: {err}") from err
+    if not all(
+        isinstance(value, str) and value for value in (name, version, sketch_name)
+    ):
+        raise UpdaterError(f"Invalid bundled firmware metadata for {source}")
+    if sketch_name not in {"FireAngelNano", "FireAngelNanoV2"}:
+        raise UpdaterError(f"Invalid bundled firmware sketch for {source}")
+    if (source == "v1") != (sketch_name == "FireAngelNano"):
+        raise UpdaterError(f"Invalid bundled firmware sketch for {source}")
+    return FirmwarePaths(
+        sketch=root / sketch_name,
+        libraries=root / "libraries",
+        name=name,
+        version=version,
+    )
+
+
+def log_selected_firmware(paths: FirmwarePaths, updater_version: str) -> None:
+    """Log independently versioned firmware and updater details."""
+    print(f"Selected firmware: {paths.name} ({paths.version})")
+    print(f"Updater app version: {updater_version}")
 
 
 class HomeAssistantClient:
@@ -159,7 +191,7 @@ def flash_firmware(
 ) -> None:
     """Suspend the integration, compile/upload/verify, and always resume it."""
     suspended = False
-    flash_error: BaseException | None = None
+    flash_error: Exception | None = None
     try:
         client.service("suspend_for_maintenance", config_entry_id)
         suspended = True
@@ -179,7 +211,7 @@ def flash_firmware(
             raise UpdaterError(
                 f"Serial device did not reappear within 30 seconds: {device}"
             )
-    except BaseException as err:
+    except Exception as err:
         flash_error = err
     finally:
         if suspended:
@@ -191,7 +223,7 @@ def flash_firmware(
                     raise UpdaterError(
                         "Integration did not reconnect within 45 seconds after flashing"
                     )
-            except BaseException as resume_error:
+            except Exception as resume_error:
                 if flash_error is not None:
                     raise UpdaterError(
                         f"Firmware operation failed ({flash_error}); integration "
@@ -212,6 +244,8 @@ def main() -> int:
     configured_device = options.get("serial_device", "auto")
     config_entry_id = options.get("config_entry_id") or None
     paths = firmware_paths(source)
+    updater_version = os.environ.get("UPDATER_APP_VERSION", "unknown")
+    log_selected_firmware(paths, updater_version)
     token = os.environ.get("SUPERVISOR_TOKEN", "")
     client = HomeAssistantClient(token) if token else None
 
@@ -238,7 +272,7 @@ def main() -> int:
         return 0
     if action == "compile":
         compile_firmware(paths)
-        print(f"Firmware {source} compiled successfully")
+        print(f"{paths.name} firmware {paths.version} compiled successfully")
         return 0
     if action != "flash":
         raise UpdaterError(f"Unsupported action: {action}")
@@ -249,7 +283,8 @@ def main() -> int:
     device = resolve_serial_device(configured_device, status)
     flash_firmware(paths, device, client, config_entry_id)
     print(
-        f"Firmware {source} flashed and integration resume was requested successfully"
+        f"{paths.name} firmware {paths.version} flashed; Home Assistant serial "
+        "communication was restored successfully"
     )
     return 0
 

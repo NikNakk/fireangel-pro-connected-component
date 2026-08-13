@@ -45,6 +45,9 @@ jobs:
         with:
           version: "1.x"
 
+      - name: Validate firmware version metadata
+        run: python scripts/generate_firmware_version_header.py --check
+
       - name: Install Arduino AVR core
         run: |
           arduino-cli core update-index

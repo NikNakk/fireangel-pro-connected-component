@@ -80,6 +80,11 @@ app-only change does not appear as a HACS integration update. Shared firmware
 changes normally require an app release because the tagged firmware source is
 bundled into the app image.
 
+Arduino firmware has a third independent version domain recorded in
+`firmware/firmware-versions.json`. Protocol V2 embeds that metadata version in
+its startup/status output; the updater reports it separately from both its own
+app version and the integration version.
+
 ## Installation
 
 ### Home Assistant OS firmware updater (optional)

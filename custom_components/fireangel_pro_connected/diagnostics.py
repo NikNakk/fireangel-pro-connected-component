@@ -38,7 +38,10 @@ async def async_get_config_entry_diagnostics(
             "diagnostic_counters": bridge.diagnostic_counters,
         }
         diagnostics["detectors"] = {
-            device_id: {"last_raw_frame": detector.last_raw_frame}
+            device_id: {
+                "last_raw_frame": detector.last_raw_frame,
+                "last_raw_frame_at": detector.last_raw_frame_at,
+            }
             for device_id, detector in bridge.devices.items()
             if detector.last_raw_frame is not None
         }

@@ -12,6 +12,10 @@ and Protocol V2 are separate build targets and do not negotiate at runtime.
   by both images.
 - `docs/serial-protocol-v2.md` is the authoritative Protocol V2 wire contract.
 - `docs/firmware-variants.md` describes compatibility and build details.
+- `firmware-versions.json` is the machine-readable source of truth for the
+  independently versioned firmware bundles. The V2 sketch consumes its version
+  through the generated `firmware_version.h`; regenerate it with
+  `python scripts/generate_firmware_version_header.py` after changing metadata.
 
 Both sketches target an Arduino Nano / ATmega328P at 5 V and 16 MHz. Typical
 Nano-compatible boards require the `ATmega328P (Old Bootloader)` target:
@@ -41,3 +45,11 @@ upstream attribution above when redistributing the firmware.
 The bridge and integration supplement the alarms' native interlink behavior.
 They are not certified life-safety equipment and are not a replacement for
 physical detector testing.
+
+## Independent versions
+
+Firmware versions do not track either the Home Assistant integration version
+in `manifest.json` or the updater app version in `wisafe2_firmware/config.yaml`.
+The updater reports all relevant versions directly. Legacy firmware remains
+versioned in bundle metadata but does not gain a new serial message merely for
+symmetry; Protocol V2 reports its version in startup and status records.

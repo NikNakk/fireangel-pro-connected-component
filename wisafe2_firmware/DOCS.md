@@ -13,6 +13,8 @@ are not supported by this first release.
 
 Choose `v1` for the maintained legacy JSON/text protocol or `v2` for structured
 Protocol 2. Both are compiled with the release's `WiSafeRadioCore` library.
+Before building, the app logs the selected firmware name and version from the
+bundle metadata, followed by its own independently managed app version.
 
 ## Configuration and actions
 
@@ -61,6 +63,10 @@ The maintained source of truth remains the repository's top-level
 beside the app Dockerfile and publishes a multi-architecture image whose tag
 matches `config.yaml`'s app version. The running app never clones a branch or
 downloads firmware. Arduino CLI 1.3.1 and Arduino AVR core 1.8.6 are pinned.
+
+The integration version, updater app version, and Arduino firmware version are
+separate release domains. `firmware/firmware-versions.json` records the bundled
+firmware versions; it is not inferred from either Home Assistant component.
 
 App releases use `app-vX.Y.Z` repository tags and are independent of `vX.Y.Z`
 integration releases. App tags publish container images but deliberately do not

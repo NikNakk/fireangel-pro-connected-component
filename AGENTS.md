@@ -176,6 +176,13 @@ must install only the runtime integration.
 
 ## Release publishing
 
+- Maintain three independent version domains: the integration version in
+  `manifest.json`, the updater app version in `wisafe2_firmware/config.yaml`,
+  and firmware bundle versions in `firmware/firmware-versions.json`. Never
+  force them to match. After changing the V2 firmware version metadata,
+  regenerate its compile-time header with
+  `python scripts/generate_firmware_version_header.py` and validate it with
+  the same command plus `--check`.
 - The integration and firmware updater app are versioned independently even
   though they share this repository. Do not bump or publish the unaffected
   component merely because the other one changed.

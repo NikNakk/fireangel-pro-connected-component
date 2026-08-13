@@ -102,6 +102,7 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     assert event.native_value == "FIRE EMERGENCY"
     assert event.extra_state_attributes["result"] == "PASS"
     assert event.extra_state_attributes["last_raw_frame"] is None
+    assert event.extra_state_attributes["last_raw_frame_at"] is None
     assert model_code.native_value == "1103"
     assert event.device_info["model"] == "WST-630"
     assert event.device_info["name"] == "FireAngel A1B2C3"
