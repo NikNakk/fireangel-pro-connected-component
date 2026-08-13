@@ -68,6 +68,13 @@ The integration version, updater app version, and Arduino firmware version are
 separate release domains. `firmware/firmware-versions.json` records the bundled
 firmware versions; it is not inferred from either Home Assistant component.
 
+For Protocol V2, the integration compares the version reported by the bridge
+with the released firmware catalogue and exposes the result as an advisory
+firmware update entity. The entity deliberately does not start this app or
+flash hardware. Update this app first, select the advertised firmware source,
+and run `flash` explicitly. Legacy firmware has no version on its serial wire,
+so no reliable availability comparison is possible until it is migrated.
+
 App releases use `app-vX.Y.Z` repository tags and are independent of `vX.Y.Z`
 integration releases. App tags publish container images but deliberately do not
 create GitHub Releases, preventing HACS from treating an app-only release as an

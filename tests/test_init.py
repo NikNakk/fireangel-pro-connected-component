@@ -92,6 +92,9 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
         assert registry.async_get_entity_id(
             "sensor", DOMAIN, "fireangel_last_test_pass_a1b2c3"
         )
+        assert registry.async_get_entity_id(
+            "update", DOMAIN, f"{entry.entry_id}_firmware"
+        )
 
         entry.runtime_data.async_process_line(
             '{"device":"C0FFEE", "model":"1103", "event":"FIRE TEST", "result":"PASS"}'

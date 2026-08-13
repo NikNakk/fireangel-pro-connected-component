@@ -180,9 +180,14 @@ must install only the runtime integration.
   `manifest.json`, the updater app version in `wisafe2_firmware/config.yaml`,
   and firmware bundle versions in `firmware/firmware-versions.json`. Never
   force them to match. After changing the V2 firmware version metadata,
-  regenerate its compile-time header with
+  regenerate its compile-time header and integration availability catalogue with
   `python scripts/generate_firmware_version_header.py` and validate it with
   the same command plus `--check`.
+- The firmware update entity is advisory and Protocol V2-only because legacy
+  firmware does not report its installed version. Do not infer a legacy
+  version or initiate physical-device flashing from the entity. Publish the
+  updater app containing new firmware before releasing integration metadata
+  that advertises it.
 - The integration and firmware updater app are versioned independently even
   though they share this repository. Do not bump or publish the unaffected
   component merely because the other one changed.

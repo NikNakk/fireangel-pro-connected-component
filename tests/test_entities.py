@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, Mock
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.components.update import UpdateDeviceClass
+from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -40,6 +42,10 @@ from custom_components.fireangel_pro_connected.sensor import (
     FireAngelEventSensor,
     FireAngelLastTestPassSensor,
     FireAngelModelCodeSensor,
+)
+from custom_components.fireangel_pro_connected.update import (
+    FIRMWARE_DOCUMENTATION_URL,
+    FireAngelFirmwareUpdateEntity,
 )
 
 
@@ -128,6 +134,49 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     event.async_write_ha_state = Mock()
     await event.async_added_to_hass()
     bridge._notify_update()
+
+
+async def test_advisory_firmware_update_entity(hass: HomeAssistant) -> None:
+    """Advertise released V2 firmware without offering automatic flashing."""
+    bridge, entry = make_bridge(hass)
+    entity = FireAngelFirmwareUpdateEntity(entry)
+
+    assert entity.device_class is UpdateDeviceClass.FIRMWARE
+    assert entity.latest_version == "2.0.1"
+    assert entity.installed_version is None
+    assert entity.state is None
+    assert not entity.available
+    assert entity.supported_features == 0
+    assert entity.release_url == FIRMWARE_DOCUMENTATION_URL
+    assert entity.device_info == FireAngelBridgeMessageSensor(entry).device_info
+
+    bridge.protocol_mode = ProtocolMode.LEGACY
+    bridge.firmware_version = "1.0.0"
+    bridge.last_activity = datetime.now(UTC)
+    assert entity.installed_version is None
+    assert not entity.available
+
+    bridge.protocol_mode = ProtocolMode.V2
+    bridge.firmware_version = ""
+    assert entity.installed_version is None
+    assert not entity.available
+
+    bridge.firmware_version = "2.0.0"
+    bridge.connected = True
+    assert entity.available
+    assert entity.installed_version == "2.0.0"
+    assert entity.state == STATE_ON
+
+    bridge.firmware_version = "2.0.1"
+    assert entity.state == STATE_OFF
+    bridge.firmware_version = "2.1.0"
+    assert entity.state == STATE_OFF
+
+    entity.hass = hass
+    entity.async_write_ha_state = Mock()
+    await entity.async_added_to_hass()
+    bridge._notify_update()
+    entity.async_write_ha_state.assert_called_once_with()
 
 
 def test_bridge_module_entities_belong_to_bridge_device(hass: HomeAssistant) -> None:

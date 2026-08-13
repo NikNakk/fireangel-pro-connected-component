@@ -124,6 +124,9 @@
       "last_event": {"name": "Last event"},
       "model_code": {"name": "Model code"},
       "last_successful_test": {"name": "Last successful test"}
+    },
+    "update": {
+      "bridge_firmware": {"name": "Firmware"}
     }
   }
 }

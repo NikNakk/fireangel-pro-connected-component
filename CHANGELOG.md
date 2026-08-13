@@ -7,6 +7,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added an advisory firmware update entity for Protocol V2 bridges. It compares
+  the version reported by the bridge with firmware released in the updater app
+  and links to the explicit flashing instructions without initiating a flash.
+
 ## [0.1.1] - 2026-08-13
 
 ### Added

@@ -13,8 +13,9 @@ and Protocol V2 are separate build targets and do not negotiate at runtime.
 - `docs/serial-protocol-v2.md` is the authoritative Protocol V2 wire contract.
 - `docs/firmware-variants.md` describes compatibility and build details.
 - `firmware-versions.json` is the machine-readable source of truth for the
-  independently versioned firmware bundles. The V2 sketch consumes its version
-  through the generated `firmware_version.h`; regenerate it with
+  independently versioned firmware bundles. The generator writes both the V2
+  compile-time `firmware_version.h` and the integration's firmware availability
+  catalogue; regenerate them with
   `python scripts/generate_firmware_version_header.py` after changing metadata.
 
 Both sketches target an Arduino Nano / ATmega328P at 5 V and 16 MHz. Typical

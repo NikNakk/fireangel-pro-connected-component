@@ -19,7 +19,7 @@ from .const import (
     SERVICE_SUSPEND_FOR_MAINTENANCE,
 )
 
-PLATFORMS = (Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR)
+PLATFORMS = (Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR, Platform.UPDATE)
 
 type FireAngelConfigEntry = ConfigEntry[FireAngelBridge]
 

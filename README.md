@@ -83,7 +83,10 @@ bundled into the app image.
 Arduino firmware has a third independent version domain recorded in
 `firmware/firmware-versions.json`. Protocol V2 embeds that metadata version in
 its startup/status output; the updater reports it separately from both its own
-app version and the integration version.
+app version and the integration version. The integration exposes an advisory
+firmware update entity when a Protocol V2 bridge reports its installed version.
+Legacy firmware cannot report an installed version, so the integration does not
+claim an update is available for legacy bridges.
 
 ## Installation
 
@@ -95,6 +98,11 @@ app version and the integration version.
 3. Install **WiSafe2 Firmware Updater**.
 4. Set `action`, `source`, and normally `serial_device: auto`, save, then start
    the app manually. Read the app log for the result.
+
+The integration's firmware update entity is advisory: update the app first so
+it contains the advertised firmware, then use the app's explicit `flash`
+action. Home Assistant does not initiate physical-device flashing from the
+entity.
 
 See the [updater documentation](wisafe2_firmware/DOCS.md) before flashing.
 Home Assistant Container/Core installations do not provide the Supervisor app
