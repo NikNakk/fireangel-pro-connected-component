@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.core import State
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FireAngelConfigEntry
@@ -85,6 +86,10 @@ class FireAngelCommandButton(FireAngelBridgeEntity, ButtonEntity):
         super().__init__(entry)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+
+    async def async_get_last_state(self) -> State | None:
+        """Do not restore a historical press as current startup activity."""
+        return None
 
     async def async_press(self) -> None:
         """Send the command."""

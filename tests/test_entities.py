@@ -89,6 +89,16 @@ async def test_entity_properties_and_commands(hass: HomeAssistant) -> None:
     bridge.last_activity = datetime.now(UTC)
     assert button.available
     bridge.async_send_command = AsyncMock()
+    assert await button.async_get_last_state() is None
+    assert button.state is None
+    button.hass = hass
+    button.async_write_ha_state = Mock()
+    await button._async_press_action()
+    assert button.state is not None
+    button.async_write_ha_state.assert_called_once_with()
+    bridge.async_send_command.assert_awaited_once_with(BUTTONS[0].command)
+
+    bridge.async_send_command.reset_mock()
     await button.async_press()
     bridge.async_send_command.assert_awaited_once_with(BUTTONS[0].command)
 

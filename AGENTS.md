@@ -134,7 +134,8 @@ pytest
 When firmware changes, compile both bundled images for
 `arduino:avr:nano:cpu=atmega328old` with `firmware/Arduino/libraries` available
 through Arduino CLI's `--libraries` option. Both sketch directories match their
-main `.ino` basenames and compile directly. Report flash and SRAM usage.
+main `.ino` basenames and compile directly. In the devcontainer, run
+`scripts/compile_firmware.sh`. Report flash and SRAM usage.
 
 When changing the devcontainer or Python requirements, also rebuild it:
 

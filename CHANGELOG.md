@@ -7,11 +7,19 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-13
+
 ### Added
 
 - Added an advisory firmware update entity for Protocol V2 bridges. It compares
   the version reported by the bridge with firmware released in the updater app
   and links to the explicit flashing instructions without initiating a flash.
+
+### Fixed
+
+- Prevented command buttons from restoring historical press timestamps during
+  Home Assistant startup, which made Logbook misleadingly report every command
+  as newly pressed without sending anything to the bridge.
 
 ## [0.1.1] - 2026-08-13
 
@@ -347,7 +355,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...v0.1.0
 [0.1.0-beta.23]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.22...v0.1.0-beta.23

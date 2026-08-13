@@ -47,12 +47,16 @@ run:
 ```sh
 pytest
 ruff check .
+scripts/compile_firmware.sh
 hass -c .devcontainer/config
 ```
 
 Home Assistant is available at <http://localhost:8123>. The post-create step
 links this repository's integration into the development configuration, so
-source edits are picked up after restarting Home Assistant.
+source edits are picked up after restarting Home Assistant. The container also
+installs architecture-native Arduino CLI 1.3.1 and Arduino AVR core 1.8.6;
+`scripts/compile_firmware.sh` validates generated version metadata and compiles
+both bundled Nano images with flash and SRAM usage in the output.
 
 Without a devcontainer, create a Python virtual environment and install
 `requirements-dev.txt` before running the same test and lint commands.

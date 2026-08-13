@@ -103,3 +103,44 @@ async def test_maintenance_services_target_entries_safely(hass: HomeAssistant) -
     second.runtime_data.async_suspend_for_maintenance.assert_awaited_once()
     assert response["serial_device"] == "/dev/ttyUSB1"
     assert first.runtime_data.maintenance_suspended is False
+
+    second.runtime_data.async_resume_from_maintenance = AsyncMock()
+    await hass.services.async_call(
+        DOMAIN,
+        "resume_after_maintenance",
+        {"config_entry_id": second.entry_id},
+        blocking=True,
+        return_response=True,
+    )
+    second.runtime_data.async_resume_from_maintenance.assert_awaited_once()
+
+    with pytest.raises(HomeAssistantError, match="No loaded"):
+        await hass.services.async_call(
+            DOMAIN,
+            "maintenance_status",
+            {"config_entry_id": "missing-entry"},
+            blocking=True,
+            return_response=True,
+        )
+
+
+async def test_resume_existing_reader_and_suspended_connect(
+    hass: HomeAssistant,
+) -> None:
+    """Cover maintenance guards when a reader task already exists."""
+    bridge = bridge_entry(hass).runtime_data
+    bridge.maintenance_suspended = True
+    bridge._task = hass.async_create_task(asyncio.sleep(60))
+    existing_task = bridge._task
+
+    await bridge.async_resume_from_maintenance()
+    assert bridge._task is existing_task
+    await bridge.async_stop()
+
+    bridge.maintenance_suspended = True
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.serial_asyncio_fast.open_serial_connection",
+        new=AsyncMock(),
+    ) as connect:
+        await bridge._async_connect()
+    connect.assert_not_awaited()

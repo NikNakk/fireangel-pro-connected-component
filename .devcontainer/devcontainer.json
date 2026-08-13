@@ -13,6 +13,7 @@
   "postStartCommand": "sudo chown -R vscode:vscode /home/vscode/.codex",
   "postCreateCommand": "mkdir -p .devcontainer/config/custom_components && ln -sfn ${containerWorkspaceFolder}/custom_components/fireangel_pro_connected .devcontainer/config/custom_components/fireangel_pro_connected",
   "containerEnv": {
+    "ARDUINO_CONFIG_FILE": "/opt/arduino/arduino-cli.yaml",
     "PYTHONASYNCIODEBUG": "1"
   },
   "forwardPorts": [

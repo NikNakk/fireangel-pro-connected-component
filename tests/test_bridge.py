@@ -849,6 +849,101 @@ async def test_disconnect_cancels_pairing_watchdog(hass: HomeAssistant) -> None:
     writer.close.assert_called_once_with()
 
 
+async def test_defensive_command_and_reconnect_paths(hass: HomeAssistant) -> None:
+    """Cover command races, completed requests, and reconnect shutdown."""
+    bridge = make_bridge(hass)
+    writer = Mock(drain=AsyncMock())
+    bridge.connected, bridge._writer = True, writer
+    bridge.protocol_mode = ProtocolMode.LEGACY
+
+    with pytest.raises(ValueError, match="Unsupported"):
+        await bridge.async_send_command("unsupported")
+
+    bridge._start_pairing()
+    queued = asyncio.create_task(bridge.async_send_command(COMMAND_SOUND_CO))
+    await asyncio.sleep(0)
+    bridge.connected = False
+    bridge._finish_pairing()
+    with pytest.raises(SerialException, match="not connected"):
+        await queued
+
+    done = asyncio.get_running_loop().create_future()
+    done.set_result({})
+    bridge._pending_commands[1] = done
+    bridge.protocol_mode = ProtocolMode.LEGACY
+    bridge._set_protocol(ProtocolMode.V2)
+
+    reader = AsyncMock()
+    reader.readline.return_value = b""
+    bridge._reader = reader
+
+    async def suspend_instead_of_waiting(_delay: int) -> None:
+        bridge.maintenance_suspended = True
+
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.asyncio.sleep",
+        suspend_instead_of_waiting,
+    ):
+        await bridge._async_read_forever()
+    assert bridge.maintenance_suspended
+
+    bridge.maintenance_suspended = False
+    bridge._reader = AsyncMock()
+    bridge._reader.readline.return_value = b""
+    bridge.async_add_update_listener(
+        lambda: setattr(bridge, "maintenance_suspended", True)
+    )
+    await bridge._async_read_forever()
+
+    bridge.maintenance_suspended = False
+    bridge._update_callbacks.clear()
+    reconnect_reader = AsyncMock()
+    reconnect_reader.readline.side_effect = [b"", asyncio.CancelledError]
+    bridge._reader = reconnect_reader
+
+    async def reconnect() -> None:
+        bridge._reader = reconnect_reader
+
+    with (
+        patch.object(bridge, "_async_connect", reconnect),
+        patch(
+            "custom_components.fireangel_pro_connected.bridge.asyncio.sleep",
+            new=AsyncMock(),
+        ),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await bridge._async_read_forever()
+
+
+def test_defensive_parser_and_request_id_paths(hass: HomeAssistant) -> None:
+    """Cover valid no-op and invalid-field parser branches."""
+    bridge = make_bridge(hass)
+    update = Mock()
+    bridge.async_add_update_listener(update)
+
+    bridge._pairing_watchdog_expired(datetime.now(UTC))
+    bridge.async_process_line("not firmware output")
+    bridge.async_process_line('{"type":"bridge","event":"startup"}')
+    bridge.async_process_line('{"type":"error","code":"busy"}')
+    bridge._process_v2("future_type", {}, datetime.now(UTC))
+    bridge._update_detector({}, datetime.now(UTC), v2=True)
+    bridge.async_process_line(
+        '{"type":"event","device":"A1B2C3","event":"STATUS",'
+        '"base":"INVALID","battery":"INVALID"}'
+    )
+    assert bridge.devices["A1B2C3"].base is None
+    assert bridge.devices["A1B2C3"].battery is None
+
+    bridge._next_request_id = 7
+    bridge._pending_commands[7] = asyncio.get_event_loop().create_future()
+    assert bridge._allocate_request_id() == 8
+
+    bridge._pending_commands = dict.fromkeys(range(65536))
+    bridge._next_request_id = 0
+    with pytest.raises(SerialException, match="No command request IDs"):
+        bridge._allocate_request_id()
+
+
 def test_future_v2_event_records_activity_without_state_change(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
