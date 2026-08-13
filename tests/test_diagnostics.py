@@ -53,6 +53,14 @@ async def test_diagnostics_include_runtime_protocol(hass: HomeAssistant) -> None
     assert diagnostics["bridge"]["maintenance_suspended"] is False
     assert diagnostics["bridge"]["last_activity"] is not None
     assert diagnostics["bridge"]["last_message"].startswith('{"type":"event"')
+    assert diagnostics["bridge"]["raw_frame_history"] == [
+        {
+            "received_at": entry.runtime_data.devices[
+                "A5B813"
+            ].last_raw_frame_at.isoformat(),
+            "raw_frame": "D22A384100EFA5B813000009407E",
+        }
+    ]
     assert diagnostics["detectors"] == {
         "A5B813": {
             "last_raw_frame": "D22A384100EFA5B813000009407E",

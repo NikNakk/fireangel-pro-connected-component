@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-13
+
+### Added
+
+- Added a bounded diagnostic history containing the 32 most recently received
+  valid Protocol V2 raw frames and their Home Assistant receive timestamps.
+
 ## [0.1.2] - 2026-08-13
 
 ### Added
@@ -355,7 +362,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added HACS metadata, installation instructions, and the original integration
   icon.
 
-[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/NikNakk/fireangel-pro-connected-component/compare/v0.1.0-beta.23...v0.1.0

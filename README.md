@@ -31,6 +31,11 @@ Alarm, event, and test information reported by the bridge's own WiSafe2
 interface is grouped with the serial bridge device instead of appearing as a
 separate detector.
 
+Downloaded integration diagnostics include a receive-ordered, in-memory history
+of the 32 most recent valid Protocol V2 raw frames and their receive timestamps.
+The bounded history contains raw evidence only and does not infer additional
+sender or event semantics.
+
 It also provides bridge buttons for sounding fire/CO test signals, silencing,
 and pairing. Command acceptance only confirms that the bridge transmitted the
 radio request; it does not prove that any detector received it or passed a

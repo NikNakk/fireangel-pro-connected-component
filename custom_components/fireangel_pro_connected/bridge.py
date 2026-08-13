@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import re
+from collections import deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -53,6 +54,7 @@ _STORAGE_VERSION = 1
 _COMMAND_TIMEOUT = 10
 _PAIRING_WATCHDOG_TIMEOUT = 35
 _ACTIVITY_TIMEOUT = 75
+RAW_FRAME_HISTORY_LIMIT = 32
 _V2_TYPES = {"bridge", "heartbeat", "status", "event", "command_result", "error"}
 _V2_EVENTS = {
     "FIRE_TEST": "FIRE TEST",
@@ -136,6 +138,9 @@ class FireAngelBridge:
         self.diagnostic_counters: dict[str, int] = {}
         self.last_error: str | None = None
         self.last_command_result: dict[str, Any] | None = None
+        self.raw_frame_history: deque[dict[str, str]] = deque(
+            maxlen=RAW_FRAME_HISTORY_LIMIT
+        )
         self._next_request_id = 0
         self._pending_commands: dict[int, asyncio.Future[dict[str, Any]]] = {}
         self._pending_command_names: dict[int, str] = {}
@@ -753,8 +758,15 @@ class FireAngelBridge:
             and isinstance(raw_frame := fields.get("raw_frame"), str)
             and _RAW_FRAME_PATTERN.fullmatch(raw_frame)
         ):
-            state.last_raw_frame = raw_frame.upper()
+            normalized_frame = raw_frame.upper()
+            state.last_raw_frame = normalized_frame
             state.last_raw_frame_at = now
+            self.raw_frame_history.append(
+                {
+                    "received_at": now.isoformat(),
+                    "raw_frame": normalized_frame,
+                }
+            )
         event = str(fields.get("event", "")).strip().upper()
         result = str(fields.get("result", "")).strip().upper()
         if (

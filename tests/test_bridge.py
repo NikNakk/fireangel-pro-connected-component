@@ -11,7 +11,10 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from serial import SerialException
 
-from custom_components.fireangel_pro_connected.bridge import FireAngelBridge
+from custom_components.fireangel_pro_connected.bridge import (
+    RAW_FRAME_HISTORY_LIMIT,
+    FireAngelBridge,
+)
 from custom_components.fireangel_pro_connected.const import (
     COMMAND_PAIRING,
     COMMAND_PAIRING_STATE,
@@ -1022,6 +1025,12 @@ def test_missing_raw_frame_is_retained_and_validated(hass: HomeAssistant) -> Non
     assert state.event == "MISSING"
     assert state.last_raw_frame == raw_frame.upper()
     assert state.last_raw_frame_at == received_at
+    assert list(bridge.raw_frame_history) == [
+        {
+            "received_at": received_at.isoformat(),
+            "raw_frame": raw_frame.upper(),
+        }
+    ]
     assert bridge._stored_status()["A5B813"]["last_raw_frame"] == raw_frame.upper()
     assert (
         bridge._stored_status()["A5B813"]["last_raw_frame_at"]
@@ -1035,12 +1044,41 @@ def test_missing_raw_frame_is_retained_and_validated(hass: HomeAssistant) -> Non
         )
         assert state.last_raw_frame == raw_frame.upper()
         assert state.last_raw_frame_at == received_at
+        assert len(bridge.raw_frame_history) == 1
 
     bridge.async_process_line(
         '{"type":"event","device":"A5B813","event":"SILENCE","raw_status":1}'
     )
     assert state.last_raw_frame == raw_frame.upper()
     assert state.last_raw_frame_at == received_at
+    assert len(bridge.raw_frame_history) == 1
+
+
+def test_raw_frame_diagnostic_history_is_bounded(hass: HomeAssistant) -> None:
+    """Retain only the most recent valid raw frames in receive order."""
+    bridge = make_bridge(hass)
+    received_at = datetime(2026, 8, 13, 12, 0, tzinfo=UTC)
+
+    with patch(
+        "custom_components.fireangel_pro_connected.bridge.dt_util.utcnow",
+        return_value=received_at,
+    ):
+        for index in range(RAW_FRAME_HISTORY_LIMIT + 3):
+            bridge.async_process_line(
+                '{"type":"event","device":"A1B2C3","event":"STATUS",'
+                f'"raw_frame":"{index:04x}"}}'
+            )
+
+    history = list(bridge.raw_frame_history)
+    assert len(history) == RAW_FRAME_HISTORY_LIMIT
+    assert history[0] == {
+        "received_at": received_at.isoformat(),
+        "raw_frame": "0003",
+    }
+    assert history[-1] == {
+        "received_at": received_at.isoformat(),
+        "raw_frame": f"{RAW_FRAME_HISTORY_LIMIT + 2:04X}",
+    }
 
 
 async def test_raw_frame_timestamp_persists_and_restores(

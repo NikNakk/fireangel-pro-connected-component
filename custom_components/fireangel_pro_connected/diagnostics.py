@@ -36,6 +36,7 @@ async def async_get_config_entry_diagnostics(
             "last_error": bridge.last_error,
             "last_command_result": bridge.last_command_result,
             "diagnostic_counters": bridge.diagnostic_counters,
+            "raw_frame_history": list(bridge.raw_frame_history),
         }
         diagnostics["detectors"] = {
             device_id: {
